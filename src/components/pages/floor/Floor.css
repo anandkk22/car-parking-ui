@@ -1,0 +1,17 @@
+.nav .nav-link {
+  padding: 5px !important;
+  margin-right: 2rem;
+}
+
+.nav .nav-link.active {
+  border-bottom: 0px solid transparent !important;
+}
+
+.nav-link.active {
+    background-color: #6c757d !important;
+    color: #ffffff !important;
+    border-radius: 0 !important;
+}
+.nav-link {
+    border-radius: 0 !important;
+}

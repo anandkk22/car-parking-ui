@@ -1,0 +1,13 @@
+.card-box {
+    width: 250px;
+}
+
+@media (max-width: 575.98px) {
+    .card-title {
+        font-size: 1rem;
+    }
+}
+
+.fs-13 {
+    font-size: 13px;
+}

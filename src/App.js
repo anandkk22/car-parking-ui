@@ -1,23 +1,29 @@
-import logo from './logo.svg';
+
+import { useState } from 'react';
 import './App.css';
+import { Footer } from './components/Layouts/Footer';
+import { Header } from './components/Layouts/Header';
+import { AllRoutes } from './routes/AllRoutes';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    Boolean(sessionStorage.getItem('token'))
+  );
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="my-5">
+      <Header
+        isAuthenticated={isAuthenticated}
+        setIsAuthenticated={setIsAuthenticated}
+      />
+      <div className='my-5'>
+        <AllRoutes
+          isAuthenticated={isAuthenticated}
+          setIsAuthenticated={setIsAuthenticated}
+        />
+      </div>
+      {/* <Footer /> */}
     </div>
   );
 }
