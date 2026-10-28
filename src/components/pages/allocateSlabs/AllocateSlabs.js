@@ -4,14 +4,14 @@ import { allocateNewSlot } from '../../../services/authServices'
 import { toast } from 'react-toastify';
 import './AllocateSlabs.css'
 
-export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab }) => {
+export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAllocated }) => {
     const printRef = useRef();
     const currentDate = new Date();
     const typeOfParking = [{ id: 1, name: 'Hourly', value: 'hourly' }, { id: 2, name: 'Fixed', value: 'fixed' }, { id: 3, name: 'Free', value: 'free' }];
     const [selectedVehicleType, setSelectedVehicleType] = useState('regular');
     const [disabled, setDisabled] = useState(false);
     const [print, setPrint] = useState(false);
-    const [responseData, setResponseData] = useState(false);
+    const [responseData, setResponseData] = useState({});
     const [pricingType, setPricingType] = useState(typeOfParking[0].value);
 
     const [regState, setRegState] = useState('');
@@ -126,20 +126,15 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab }) => {
             const data = await allocateNewSlot(allocateSlotDetails);
             if (data) {
                 setResponseData(data);
-
                 setPrint(true);
                 setAllocateNewSlab(false);
-                setPricingType('');
-                setRegState('');
-                setRegCityNumber('');
-                setRegAlpha('');
-                setRegFourDigit('');
-                setBhYear('');
-                setBhName('');
-                setBhFourDigit('');
-                setBhAlha('')
                 handleClose();
                 toast.success("Allocated Slot successfully");
+                try {
+                    await onSlotAllocated();
+                } catch (error) {
+                    toast.error(`Slot allocated, but the slot display could not be refreshed: ${error.message}`);
+                }
             }
 
         } catch (error) {
@@ -163,7 +158,6 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab }) => {
     printWindow.print();
     printWindow.close();
 
-    // Close modal after printing
     printAndClose();
   };
     return (
@@ -175,7 +169,7 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab }) => {
                 <form className="flex items-center" onSubmit={allocateSlot} >
                     <Modal.Body>
                         <label htmlFor="vehicleNumber" className='required-label'>Type of Parking</label>
-                        <select class="form-select form-select-sm" aria-label=".form-select-sm example" required value={pricingType}
+                        <select className="form-select form-select-sm" aria-label=".form-select-sm example" required value={pricingType}
                             onChange={(e) => setPricingType(e.target.value)}>
                             {
                                 typeOfParking.map((parkType) => (
@@ -184,20 +178,20 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab }) => {
                             }
                         </select>
 
-                        <div class="form-group mt-4">
+                        <div className="form-group mt-4">
                             <label htmlFor="vehicleNumber" className='required-label'>Vehicle Registration Type</label>
                             <div className='d-flex mb-2'>
-                                <div class="form-check me-3">
-                                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" defaultChecked={selectedVehicleType} value="regular"
+                                <div className="form-check me-3">
+                                    <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" defaultChecked={selectedVehicleType} value="regular"
                                         checked={selectedVehicleType === 'regular'} onChange={onVehicleTypeChange} />
-                                    <label class="form-check-label" for="flexRadioDefault1">
+                                    <label className="form-check-label" for="flexRadioDefault1">
                                         Regular
                                     </label>
                                 </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" value="bhSeries"
+                                <div className="form-check">
+                                    <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" value="bhSeries"
                                         checked={selectedVehicleType === 'bhSeries'} onChange={onVehicleTypeChange} />
-                                    <label class="form-check-label" for="flexRadioDefault2">
+                                    <label className="form-check-label" for="flexRadioDefault2">
                                         BH Series
                                     </label>
                                 </div>
@@ -221,19 +215,19 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab }) => {
                                 </div>
                             </div>
                         )}
-                        <div class="form-group mt-4">
+                        <div className="form-group mt-4">
                             <label htmlFor="customerName">Customer Name</label>
-                            <input type="text" class="form-control" id="customerName" aria-describedby="customerName" placeholder="Enter Customer Name" value={customerName}
+                            <input type="text" className="form-control" id="customerName" aria-describedby="customerName" placeholder="Enter Customer Name" value={customerName}
                                 onChange={(e) => setCustomerName(e.target.value)} />
                         </div>
-                        <div class="form-group mt-4">
+                        <div className="form-group mt-4">
                             <label htmlFor="mobileNumber">Mobile Number</label>
-                            <input type="number" class="form-control" id="mobileNumber" aria-describedby="customerName" placeholder="Enter Customer Mobile Number" value={mobileNumber}
+                            <input type="number" className="form-control" id="mobileNumber" aria-describedby="customerName" placeholder="Enter Customer Mobile Number" value={mobileNumber}
                                 onChange={(e) => setMobileNumber(e.target.value)} />
                         </div>
-                        <div class="form-group mt-4">
+                        <div className="form-group mt-4">
                             <label htmlFor="address">Customer Address</label>
-                            <input type="text" class="form-control" id="address" aria-describedby="address" placeholder="Enter Customer Address" value={address}
+                            <input type="text" className="form-control" id="address" aria-describedby="address" placeholder="Enter Customer Address" value={address}
                                 onChange={(e) => setAddress(e.target.value)} />
                         </div>
                     </Modal.Body>
@@ -256,15 +250,15 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab }) => {
                         <div className='row'>
                             <div className='container d-flex mb-2'>
                                 <div className='col-sm-6'>Date: <span className='fw-bold'>{date}</span></div>
-                                <div className='col-sm-6'>Transaction Number: <span className='fw-bold'>{responseData.transactionId}</span></div>
+                                <div className='col-sm-6'>Transaction Number: <span className='fw-bold'>{responseData?.transactionId}</span></div>
                             </div>
                             <div className='container d-flex mb-2'>
-                                <div className='col-sm-6'>Floor: <span className='fw-bold'>{responseData.floorId}</span></div>
-                                <div className='col-sm-6'>Slot Number: <span className='fw-bold'>{responseData.slotNumber}</span></div>
+                                <div className='col-sm-6'>Floor: <span className='fw-bold'>{responseData?.floorId}</span></div>
+                                <div className='col-sm-6'>Slot Number: <span className='fw-bold'>{responseData?.slotNumber}</span></div>
                             </div>
                             <div className='container d-flex mb-2'>
-                                <div className='col-sm-6'>Car Number: <span className='fw-bold'>{responseData.vehicleNumber}</span></div>
-                                <div className='col-sm-6'>Entry: <span className='fw-bold'>{formatEntryTime(responseData.entryTime)}</span></div>
+                                <div className='col-sm-6'>Car Number: <span className='fw-bold'>{responseData?.vehicleNumber}</span></div>
+                                <div className='col-sm-6'>Entry: <span className='fw-bold'>{formatEntryTime(responseData?.entryTime)}</span></div>
                             </div>
                         </div>
                         <div className='row mt-2'><div className='container'><p className='fontsize-10'>Note: "Car Parked at Owner's Risk"<br /> Time: 9.00am to 9.00pm</p></div></div>

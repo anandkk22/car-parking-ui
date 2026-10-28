@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { addNewSlot } from '../../../../services/authServices'
+import { addNewSlot, getParkingSlots } from '../../../../services/authServices'
 import { Modal, Button } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 
-export const AddSlot = ({ floors, newSlot, setNewSlot }) => {
+export const AddSlot = ({ floors, newSlot, setNewSlot, setFloorSlots }) => {
     const status = [{ id: 1, name: 'Available', value: 'available' }, { id: 2, name: 'Occupied', value: 'occupied' }, { id: 3, name: 'Reserved', value: 'reserved' }];
     const [floorSelected, setFloorSelected] = useState('');
     const [slectedSlotNumber, setSelectedSlotNumber] = useState('');
@@ -25,14 +25,19 @@ export const AddSlot = ({ floors, newSlot, setNewSlot }) => {
                 slotNumber: Number(slectedSlotNumber),
                 status: selectStatus,
             }
-            const data = await addNewSlot(slotDetails);
-            if(data)
-            setFloorSelected('')
-            setSelectedSlotNumber('');
-            setSelectStatus('')
+            await addNewSlot(slotDetails);
             handleClose();
             toast.success("Added Slot successfully");
 
+            try {
+                const slots = await getParkingSlots();
+                if (!Array.isArray(slots)) {
+                    throw new Error("Invalid parking slots response");
+                }
+                setFloorSlots(slots);
+            } catch (error) {
+                toast.error(`Slot was added, but the list could not be refreshed: ${error.message}`);
+            }
         } catch (error) {
             toast.error(error.message)
         }
@@ -46,7 +51,7 @@ export const AddSlot = ({ floors, newSlot, setNewSlot }) => {
                 <form className="flex items-center" onSubmit={addSlot}>
                     <Modal.Body>
                         <label htmlFor="floorSelected" className='required-label'>Floor Number</label>
-                        <select class="form-select form-select-sm" aria-label=".form-select-sm example" required value={floorSelected}
+                        <select className="form-select form-select-sm" aria-label=".form-select-sm example" required value={floorSelected}
                         onChange={(e) => setFloorSelected(e.target.value)}>
                             <option value="" disabled selected>Select Floor</option>
                             {
@@ -55,14 +60,14 @@ export const AddSlot = ({ floors, newSlot, setNewSlot }) => {
                                 ))
                             }
                         </select>
-                        <div class="form-group mt-4">
+                        <div className="form-group mt-4">
                             <label htmlFor="description" className='required-label'>Slot Number</label>
-                            <input type="number" class="form-control" id="floorNumber" aria-describedby="emailHelp" placeholder="Enter Slot Number" value={slectedSlotNumber}
+                            <input type="number" className="form-control" id="floorNumber" aria-describedby="emailHelp" placeholder="Enter Slot Number" value={slectedSlotNumber}
                              onChange={(e) => setSelectedSlotNumber(e.target.value)}/>
                         </div>
-                        <div class="form-group mt-4">
+                        <div className="form-group mt-4">
                             <label htmlFor="description" className='required-label'>Status</label>
-                            <select class="form-select form-select-sm" aria-label=".form-select-sm example" required value={selectStatus}
+                            <select className="form-select form-select-sm" aria-label=".form-select-sm example" required value={selectStatus}
                             onChange={(e) => setSelectStatus(e.target.value)}>
                                 <option value="" disabled selected>Select Status</option>
                                 {

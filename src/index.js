@@ -7,15 +7,20 @@ import reportWebVitals from './reportWebVitals';
 import { ToastContainer } from 'react-toastify';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import { FloorProvider } from './context/FloorContext';
+import { AddSlotProvider } from './context/AddSlotContext';
 
-// import 'bootstrap/dist/js/bootstrap.bundle.min.js'; 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <Router>
-      <App />
-      <ToastContainer />
+      {/* <FloorProvider> */}
+        {/* <AddSlotProvider> */}
+        <App />
+        <ToastContainer />
+        {/* </AddSlotProvider> */}
+      {/* </FloorProvider> */}
     </Router>
   </React.StrictMode>
 );

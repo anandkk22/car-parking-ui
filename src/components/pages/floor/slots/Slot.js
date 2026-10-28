@@ -4,6 +4,7 @@ import { toast } from "react-toastify"
 import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Slot.css'
+import { useAddSlot } from '../../../../context/AddSlotContext';
 
 const formatEntryTime = (entryTime) => {
     const date = new Date(entryTime);
@@ -13,7 +14,7 @@ const formatEntryTime = (entryTime) => {
     return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-export const Slot = ({ selectedFloor }) => {
+export const Slot = ({ selectedFloor, parkedRefreshVersion }) => {
     const slots = Array.isArray(selectedFloor) ? selectedFloor : [];
     const [parked, setParked] = useState([]);
 
@@ -22,7 +23,7 @@ export const Slot = ({ selectedFloor }) => {
             p => p.slotId === slot.slotId && p.status.toLowerCase() === slot.status.toLowerCase()
         );
         return match ? { ...slot, ...match } : slot;
-    });
+    }).sort((a, b) => String(a.slotNumber).localeCompare(String(b.slotNumber), undefined, { numeric: true }));;
 
     useEffect(() => {
         async function fetchParkedDetails() {
@@ -37,11 +38,10 @@ export const Slot = ({ selectedFloor }) => {
                 toast.error(error.message);
             }
         } fetchParkedDetails()
-    }, [])
+    }, [parkedRefreshVersion])
 
 
-    return (
-        
+    return (       
 
         <div className="text-center">
             <div className="d-flex flex-wrap gap-3">{mergedSlots.map((slot) => (

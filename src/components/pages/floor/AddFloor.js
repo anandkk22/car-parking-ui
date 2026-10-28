@@ -38,14 +38,14 @@ export const AddFloor = ({ newFloor, setNewFloor, floors, setFloors }) => {
                 </Modal.Header>
                 <form onSubmit={addNewFloor} className="flex items-center">
                     <Modal.Body>
-                        <div class="form-group">
+                        <div className="form-group">
                             <label htmlFor="floorNumber" className='required-label'>Floor Number</label>
-                            <input type="number" class="form-control" id="floorNumber" aria-describedby="emailHelp" placeholder="Enter Floor Number" value={floorNumber}
+                            <input type="number" className="form-control" id="floorNumber" aria-describedby="emailHelp" placeholder="Enter Floor Number" value={floorNumber}
                                 onChange={(e) => setFloorNumber(e.target.value)} />
                         </div>
-                        <div class="form-group mt-4">
+                        <div className="form-group mt-4">
                             <label htmlFor="description" className='required-label'>Description</label>
-                            <input type="text" class="form-control" id="description" placeholder="Enter Description" value={description}
+                            <input type="text" className="form-control" id="description" placeholder="Enter Description" value={description}
                                 onChange={(e) => setDescription(e.target.value)} />
                         </div>
                     </Modal.Body>
