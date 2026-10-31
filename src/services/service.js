@@ -6,3 +6,13 @@ export async function getAllFloors() {
     const data = await response.json();
     return data;
 }
+
+export function PriceDisplay(amount) {
+  const formattedPrice = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0 // Optional: removes paise decimal points
+  }).format(amount);
+
+  return <p> {amount > 0 ? formattedPrice : ' '}</p>; // Outputs: ₹1,50,000
+}

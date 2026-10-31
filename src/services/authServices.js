@@ -105,7 +105,7 @@ export async function addFloor(floorDetails) {
     }
     const response = await fetch('http://localhost:8080/api/v1/floor/add', requestOption);
     if (!response.ok) {
-       const errorData = await response.json();
+        const errorData = await response.json();
         throw new Error(errorData.error);
     }
     const data = await response.json();
@@ -121,7 +121,7 @@ export async function addNewSlot(slotDetails) {
     }
     const response = await fetch('http://localhost:8080/api/v1/parkingslot', requestOption);
     if (!response.ok) {
-       const errorData = await response.json();
+        const errorData = await response.json();
         throw new Error(errorData.error);
     }
     const data = await response.json();
@@ -129,7 +129,7 @@ export async function addNewSlot(slotDetails) {
 }
 
 export async function allocateNewSlot(slotDetails) {
-   const browserData = getSession();
+    const browserData = getSession();
     const requestOption = {
         method: 'POST',
         headers: { "content-Type": "application/json", Authorization: `Bearer ${browserData.token}` },
@@ -137,13 +137,73 @@ export async function allocateNewSlot(slotDetails) {
     }
     const response = await fetch('http://localhost:8080/api/v1/parkingslot/allocateParking', requestOption);
     if (!response.ok) {
-       const errorData = await response.json();
+        const errorData = await response.json();
         throw new Error(errorData.error);
     }
     const data = await response.json();
     return data;
-
 }
+
+export async function fetchDailyReport(fromDate, toDate) {
+    const browserData = getSession();
+    const requestOption = {
+        method: 'GET',
+        headers: { "content-Type": "application/json", Authorization: `Bearer ${browserData.token}` },
+        // body: JSON.stringify(payloadData)
+    }
+    const response = await fetch(`http://localhost:8080/api/v1/parkingslot/date/${fromDate}/${toDate}`, requestOption);
+    if (!response.ok) {
+        throw Object.assign(new Error(response.statusText), { status: response.status });
+    }
+    const data = await response.json();
+    return data;
+}
+
+export function formatDate(dateValue, format) {
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const pad = (value) => String(value).padStart(2, '0');
+
+    if (format) {
+        return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`
+    } else {
+        return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+    }
+}
+
+export async function checkout(transactionId) {
+    const browserData = getSession();
+    const requestOption = {
+        method: 'PUT',
+        headers: { "content-Type": "application/json", Authorization: `Bearer ${browserData.token}` }
+    }
+    const response = await fetch(`http://localhost:8080/api/v1/parkingslot/${transactionId}`, requestOption);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error);
+    }
+    const data = await response.json();
+    return data;
+}
+
+export async function payment(id, mode) {
+    const browserData = getSession();
+    const requestOption = {
+        method: 'POST',
+        headers: { "content-Type": "application/json", Authorization: `Bearer ${browserData.token}` }
+    }
+    const response = await fetch(`http://localhost:8080/api/v1/parkingslot/${id}/payment?paymentMode=${mode}`, requestOption);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error);
+    }
+    const data = await response.json();
+    return data;
+}
+
 
 export function logout() {
     sessionStorage.removeItem("token");

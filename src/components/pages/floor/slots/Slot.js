@@ -14,16 +14,24 @@ const formatEntryTime = (entryTime) => {
     return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-export const Slot = ({ selectedFloor, parkedRefreshVersion }) => {
+export const Slot = ({ selectedFloor, parkedRefreshVersion, searchVehicle }) => {
     const slots = Array.isArray(selectedFloor) ? selectedFloor : [];
     const [parked, setParked] = useState([]);
 
     const mergedSlots = slots.map(slot => {
-        const match = parked.find(
-            p => p.slotId === slot.slotId && p.status.toLowerCase() === slot.status.toLowerCase()
-        );
-        return match ? { ...slot, ...match } : slot;
-    }).sort((a, b) => String(a.slotNumber).localeCompare(String(b.slotNumber), undefined, { numeric: true }));;
+        console.log('searchVehicle', searchVehicle)
+        if(searchVehicle === null || searchVehicle === '') {
+            const match = parked.find(
+                p => p.slotId === slot.slotId && p.status.toLowerCase() === slot.status.toLowerCase()
+            );
+            return match ? { ...slot, ...match } : slot;
+        } else {
+            const match = parked.filter(
+                p => p.vehicleNumber.includes(searchVehicle)
+            );
+            return match ? { ...slot, ...match } : slot;
+        }
+    }).sort((a, b) => String(a.slotNumber).localeCompare(String(b.slotNumber), undefined, { numeric: true }));
 
     useEffect(() => {
         async function fetchParkedDetails() {
