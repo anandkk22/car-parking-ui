@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { addNewSlot, getParkingSlots } from '../../../../services/authServices'
 import { Modal, Button } from 'react-bootstrap';
 import { toast } from 'react-toastify';
+import { useCheckInOut } from '../../../../context/CheckinContext';
 
 export const AddSlot = ({ floors, newSlot, setNewSlot, setFloorSlots }) => {
+    const { setSlots: setCheckInOutSlots } = useCheckInOut();
     const status = [{ id: 1, name: 'Available', value: 'available' }, { id: 2, name: 'Occupied', value: 'occupied' }, { id: 3, name: 'Reserved', value: 'reserved' }];
     const [floorSelected, setFloorSelected] = useState('');
     const [slectedSlotNumber, setSelectedSlotNumber] = useState('');
@@ -35,6 +37,7 @@ export const AddSlot = ({ floors, newSlot, setNewSlot, setFloorSlots }) => {
                     throw new Error("Invalid parking slots response");
                 }
                 setFloorSlots(slots);
+                setCheckInOutSlots(slots);
             } catch (error) {
                 toast.error(`Slot was added, but the list could not be refreshed: ${error.message}`);
             }

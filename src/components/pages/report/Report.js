@@ -1,12 +1,15 @@
-import { Modal, Button } from 'react-bootstrap';
-import './CheckoutSlot.css'
-import { useEffect, useState } from 'react';
+import { Modal } from 'react-bootstrap';
+import './Report.css'
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { fetchDailyReport, formatDate, checkout, payment, getAllParkedDetails } from '../../../services/authServices';
+import { fetchDailyReport, formatDate, checkout, payment } from '../../../services/authServices';
 import { PriceDisplay } from '../../../services/service';
 import Form from 'react-bootstrap/Form';
+import { useCheckInOut } from '../../../context/CheckinContext';
+import { CheckoutPage } from '../checkout/CheckoutPage';
 
-export const CheckoutSlot = ({ setcheckoutSlot, checkoutSlot }) => {
+export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) => {
+    const { checkOutSlot, checkInVersion } = useCheckInOut();
     const currentDate = new Date();
     const date = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
     const [dailyReport, setDailyReport] = useState([]);
@@ -17,6 +20,7 @@ export const CheckoutSlot = ({ setcheckoutSlot, checkoutSlot }) => {
     const [areYouSure, setAreYouSure] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState({});
+    const [selectedTrId, setSelectedTrId] = useState('');
     const [selectgedDefaultPayment, setSelectgedDefaultPayment] = useState('online');
     const [pricingType, setPricingType] = useState(false);
     const reportRows = search
@@ -25,7 +29,7 @@ export const CheckoutSlot = ({ setcheckoutSlot, checkoutSlot }) => {
         )
         : dailyReport;
 
-    const fetchReport = async () => {
+    const fetchReport = useCallback(async () => {
         try {
             const data = await fetchDailyReport(fromDate, toDate);
             if (!Array.isArray(data)) {
@@ -36,7 +40,7 @@ export const CheckoutSlot = ({ setcheckoutSlot, checkoutSlot }) => {
         } catch (error) {
             toast.error(error.message);
         }
-    };
+    }, [fromDate, toDate]);
     
     const handleClose = () => {
         setcheckoutSlot(false);
@@ -73,7 +77,14 @@ export const CheckoutSlot = ({ setcheckoutSlot, checkoutSlot }) => {
         try {
             const data = await checkout(selectedVehicle.transactionId);
             if (data) {
+                checkOutSlot(data);
+                try {
+                    await onCheckoutCompleted();
+                } catch (error) {
+                    toast.error(`Checkout succeeded, but the slot display could not be refreshed: ${error.message}`);
+                }
                 setSelectedVehicle(data);
+                setSelectedTrId(selectedVehicle.transactionId)
                 handleClose();
                 setcheckoutSlot(false);
                 setAreYouSure(false);
@@ -108,7 +119,7 @@ export const CheckoutSlot = ({ setcheckoutSlot, checkoutSlot }) => {
 
     useEffect(() => {
         fetchReport();
-    }, [fromDate, toDate])
+    }, [fetchReport, checkInVersion])
     return (
         <div>
             <Modal show={checkoutSlot} onHide={handleClose} modal-dialog centered size="xl" className='ps-3'>
@@ -193,7 +204,8 @@ export const CheckoutSlot = ({ setcheckoutSlot, checkoutSlot }) => {
 
                 </Modal.Body>
             </Modal>
-            <Modal show={areYouSure} onHide={handleClose} centered>
+            <CheckoutPage areYouSure={areYouSure} handleClose={handleClose} selectedVehicle={selectedVehicle} handleCancel={handleCancel} onConfirm={onConfirm} showPayment={showPayment} pricingType={pricingType} selectgedDefaultPayment={selectgedDefaultPayment} onPaymentSelection={onPaymentSelection} submitPayment={submitPayment}   />
+            {/* <Modal show={areYouSure} onHide={handleClose} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you Sure you?</Modal.Title>
                 </Modal.Header>
@@ -215,8 +227,8 @@ export const CheckoutSlot = ({ setcheckoutSlot, checkoutSlot }) => {
                         Confirm
                     </Button>
                 </Modal.Footer>
-            </Modal>
-            <Modal show={showPayment} onHide={handleClose} centered>
+            </Modal> */}
+            {/* <Modal show={showPayment} onHide={handleClose} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>{pricingType ? 'Select Payment Mode': 'Checkout'}</Modal.Title>
                 </Modal.Header>
@@ -278,7 +290,7 @@ export const CheckoutSlot = ({ setcheckoutSlot, checkoutSlot }) => {
                         Submit
                     </Button>
                 </Modal.Footer>
-            </Modal>
+            </Modal> */}
         </div>
     )
 }

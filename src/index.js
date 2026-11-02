@@ -9,18 +9,21 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { FloorProvider } from './context/FloorContext';
 import { AddSlotProvider } from './context/AddSlotContext';
+import { CheckInOutProvider } from './context/CheckinContext';
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <Router>
-      {/* <FloorProvider> */}
-        {/* <AddSlotProvider> */}
-        <App />
-        <ToastContainer />
-        {/* </AddSlotProvider> */}
-      {/* </FloorProvider> */}
+      <FloorProvider>
+        <AddSlotProvider>
+          <CheckInOutProvider>
+          <App />
+          <ToastContainer />
+          </CheckInOutProvider>
+        </AddSlotProvider>
+      </FloorProvider>
     </Router>
   </React.StrictMode>
 );

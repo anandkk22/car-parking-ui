@@ -6,12 +6,20 @@ import './Dashboard.css'
 import { AddFloor } from "./floor/AddFloor";
 import { AddSlot } from "./floor/slots/AddSlot";
 import { AllocateSlabs } from "./allocateSlabs/AllocateSlabs";
-import ChatApp from "./floor/ChatApp";
-import { CheckoutSlot } from "./checkout/CheckoutSlot";
+// import ChatApp from "./floor/ChatApp";
+import { Report } from "./report/Report";
+import { useFloor } from '../../context/FloorContext';
+import { useAddSlot } from '../../context/AddSlotContext';
+import { useCheckInOut } from '../../context/CheckinContext';
 export const Dashboard = () => {
-    const [floors, setFloors] = useState([]);
+    const { floorList: floors, setFloors } = useFloor();
     const [activeFloor, setActiveFloor] = useState(null);
-    const [floorSlots, setFloorSlots] = useState([]);
+    const { slotList: floorSlots, setSlots: setFloorSlots } = useAddSlot();
+    const {
+        totalAvailableSlot,
+        totalOccupiedSlot,
+        setSlots: setCheckInOutSlots,
+    } = useCheckInOut();
     const [selectedFloor, setselectedFloor] = useState([]);
     const [parkedRefreshVersion, setParkedRefreshVersion] = useState(0);
     const [newFloor, setNewFloor] = useState(false);
@@ -19,8 +27,6 @@ export const Dashboard = () => {
     const [allocateNewSlab, setAllocateNewSlab] = useState(false);
     const [checkoutSlot, setcheckoutSlot] = useState(false);
     const [searchVehicle, setSearchSearchVehicle] = useState('');
-    const available = floorSlots.filter((slot) => slot.status === 'available');
-    const occupied = floorSlots.filter((slot) => slot.status === 'occupied');
     const reserved = floorSlots.filter((slot) => slot.status === 'reserved');
 
     const addFloor = () => setNewFloor(true);
@@ -34,9 +40,10 @@ export const Dashboard = () => {
             throw new Error("Invalid parking slots response");
         }
         setFloorSlots(data);
-    }, []);
+        setCheckInOutSlots(data);
+    }, [setFloorSlots, setCheckInOutSlots]);
 
-    const handleSlotAllocated = useCallback(async () => {
+    const handleParkingDataChanged = useCallback(async () => {
         await refreshParkingSlots();
         setParkedRefreshVersion((version) => version + 1);
     }, [refreshParkingSlots]);
@@ -63,7 +70,7 @@ export const Dashboard = () => {
             }
         }
         fetchFloorDetails();
-    }, [])
+    }, [setFloors])
 
     useEffect(() => {
         async function fetchParkingSlots() {
@@ -121,7 +128,7 @@ export const Dashboard = () => {
                                             <div className="card-body">
                                                 <div className="fs-5 card-title fw-bold">Total Floors</div>
                                                 <div className='d-flex align-items-center justify-content-between'>
-                                                    <div className="fs-4">{floors.length}</div>
+                                                    <div className="fs-4">{floors.length || 0}</div>
                                                     <i className="bi bi-grid-3x3-gap fs-2 text-warning"></i>
                                                 </div>
                                                 <button className="small btn btn-link ps-0 fs-13" onClick={addFloor}>
@@ -135,7 +142,7 @@ export const Dashboard = () => {
                                             <div className="card-body">
                                                 <div className="fs-5 card-title fw-bold">Total Slots</div>
                                                 <div className='d-flex align-items-center justify-content-between'>
-                                                    <div className="fs-4">{floorSlots.length - reserved.length}</div>
+                                                    <div className="fs-4">{floorSlots.length || 0}</div>
                                                     <i className="bi bi-columns-gap fs-2 text-danger"></i>
                                                 </div>
                                                 <button className="small btn btn-link ps-0 fs-13" onClick={addSlot}>
@@ -152,10 +159,10 @@ export const Dashboard = () => {
                                                 <div className="fs-5 card-title fw-bold">Available Slots</div>
                                                 <div className='align-items-center justify-content-between'>
                                                     <div className="progress" style={{ height: '30px' }}>
-                                                        <div className="progress-bar" role="progressbar" style={{ width: (100 * occupied.length) / available.length }} aria-valuenow={available.length} aria-valuemin="0" aria-valuemax={floorSlots.length - reserved.length}>{available.length}</div>
+                                                        <div className="progress-bar" role="progressbar" aria-valuenow={totalAvailableSlot} aria-valuemin="0" aria-valuemax={floorSlots.length - reserved.length}>{totalAvailableSlot || 0}</div>
                                                     </div>
                                                 </div>
-                                                <button className="small btn btn-link mt-3 ps-0 fs-13" onClick={addAllocateSlab} disabled={available.length == 0}>
+                                                <button className="small btn btn-link mt-3 ps-0 fs-13" onClick={addAllocateSlab} disabled={totalAvailableSlot === 0}>
                                                     <i className="bi bi-plus-square me-2 text-primary"></i><span className="text-primary">CheckIn</span>
                                                 </button>
                                             </div>
@@ -167,7 +174,7 @@ export const Dashboard = () => {
                                                 <div className="fs-5 card-title fw-bold">Occupied Slots</div>
                                                 <div className='align-items-center justify-content-between'>
                                                     <div className="progress" style={{ height: '30px' }}>
-                                                        <div className="progress-bar bg-danger" role="progressbar" style={{ width: '75%' }} aria-valuenow={123 - 25} aria-valuemin="0" aria-valuemax={123 - 25}>{occupied.length}</div>
+                                                        <div className="progress-bar bg-danger" role="progressbar">{totalOccupiedSlot}</div>
                                                     </div>
                                                 </div>
                                                 <button className="small btn btn-link mt-3 ps-0 fs-13" onClick={onCheckoutSlot}>
@@ -183,14 +190,18 @@ export const Dashboard = () => {
                 </div>
             </section>
             {/* <ChatApp /> */}
-            <AddFloor newFloor={newFloor} setNewFloor={setNewFloor} floors={floors} setFloors={setFloors} />
+            <AddFloor newFloor={newFloor} setNewFloor={setNewFloor} />
             <AddSlot newSlot={newSlot} setNewSlot={setNewSlot} floors={floors} setFloorSlots={setFloorSlots} />
             <AllocateSlabs
                 allocateNewSlab={allocateNewSlab}
                 setAllocateNewSlab={setAllocateNewSlab}
-                onSlotAllocated={handleSlotAllocated}
+                onSlotAllocated={handleParkingDataChanged}
             />
-            <CheckoutSlot setcheckoutSlot={setcheckoutSlot} checkoutSlot={checkoutSlot} />
+            <Report
+                setcheckoutSlot={setcheckoutSlot}
+                checkoutSlot={checkoutSlot}
+                onCheckoutCompleted={handleParkingDataChanged}
+            />
         </main>
     );
 }

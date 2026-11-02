@@ -1,32 +1,35 @@
-import { createContext, useContext, useReducer } from "react";
+import { createContext, useCallback, useContext, useReducer } from "react";
 import { FloorReducer } from "../components/reducers/FloorReducer";
 
 const floorInitialState = {
     floorList: [],
-    total: 0,
+    totalFloors: 0,
 }
 
 const FloorContext = createContext(floorInitialState);
 
-export const FloorProvider = ({children}) => {
+export const FloorProvider = ({ children }) => {
     const [state, dispatch] = useReducer(FloorReducer, floorInitialState);
 
-    function addFloor(floor) {
-        const updatedFloor = state.floorList.concat(floor);
-        const updatedTotal = state.total + 1;
+    const setFloors = useCallback((floors) => {
+        dispatch({
+            type: 'SET_FLOORS',
+            payload: floors
+        })
+    }, [])
+
+    const addNewFloor = useCallback((floor) => {
         dispatch({
             type: 'ADD_FLOOR',
-            payload: {
-                floors: updatedFloor,
-                total: updatedTotal
-            }
+            payload: floor
         })
-    }
+    }, [])
 
     const value = {
         floorList: state.floorList,
-        total: state.total,
-        addFloor,
+        totalFloors: state.totalFloors,
+        setFloors,
+        addNewFloor,
     }
 
     return (

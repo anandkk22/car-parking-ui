@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer } from "react"
+import { createContext, useCallback, useContext, useReducer } from "react"
 import { AddSlotReducer } from "../components/reducers/AddSlotReducer"
 
 const addSlotInitialState = {
@@ -11,28 +11,31 @@ const AddSlotContext = createContext(addSlotInitialState)
 export const AddSlotProvider = ({children}) => {
     const [state, dispatch ] = useReducer(AddSlotReducer, addSlotInitialState);
 
-    function addSlot(slot) {
-        const updatedSlot = state.slotList.concat(slot);
-        const updatedTotal = state.total + 1;
+    const setSlots = useCallback((slots) => {
+        dispatch({
+            type: 'SET_SLOTS',
+            payload: slots
+        })
+    }, [])
+
+    const addNewSlot = useCallback((slot) => {
         dispatch({
             type: 'ADD_SLOT',
-            payload: {
-                slots: updatedSlot,
-                total: updatedTotal
-            }
+            payload: slot
         })
-    }
+    }, [])
 
     const value = {
         slotList: state.slotList,
         total: state.total,
-        addSlot,
+        setSlots,
+        addNewSlot,
     }
 
     return (
-        <AddSlotProvider.Provider value = {value}>
+        <AddSlotContext.Provider value = {value}>
             {children}
-        </AddSlotProvider.Provider>
+        </AddSlotContext.Provider>
     )
 }
 
