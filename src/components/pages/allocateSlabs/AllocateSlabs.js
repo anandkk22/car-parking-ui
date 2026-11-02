@@ -3,8 +3,10 @@ import { Modal, Button } from 'react-bootstrap';
 import { allocateNewSlot } from '../../../services/authServices'
 import { toast } from 'react-toastify';
 import './AllocateSlabs.css'
+import { useCheckInOut } from '../../../context/CheckinContext';
 
 export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAllocated }) => {
+    const { checkInSlot } = useCheckInOut();
     const printRef = useRef();
     const currentDate = new Date();
     const typeOfParking = [{ id: 1, name: 'Hourly', value: 'hourly' }, { id: 2, name: 'Fixed', value: 'fixed' }, { id: 3, name: 'Free', value: 'free' }];
@@ -38,7 +40,7 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
     const handleClose = () => {
         setAllocateNewSlab(false);
         setSelectedVehicleType('regular')
-        setPricingType('');
+        setPricingType(typeOfParking[0].value);
         setRegState('');
         setRegCityNumber('');
         setRegAlpha('');
@@ -125,6 +127,7 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
             }
             const data = await allocateNewSlot(allocateSlotDetails);
             if (data) {
+                checkInSlot(data);
                 setResponseData(data);
                 setPrint(true);
                 setAllocateNewSlab(false);

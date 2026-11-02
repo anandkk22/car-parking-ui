@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { addFloor } from '../../../services/authServices';
+import { useFloor } from '../../../context/FloorContext';
 
-export const AddFloor = ({ newFloor, setNewFloor, floors, setFloors }) => {
+export const AddFloor = ({ newFloor, setNewFloor }) => {
+    const { addNewFloor } = useFloor();
     const handleClose = () => {
         setNewFloor(false);
         setFloorNumber("");
@@ -13,7 +15,7 @@ export const AddFloor = ({ newFloor, setNewFloor, floors, setFloors }) => {
     const [description, setDescription] = useState("");
     const isDisabled = !floorNumber || !description;
 
-    async function addNewFloor(event) {
+    async function handleAddNewFloor(event) {
         event.preventDefault();
         try {
             const floorDetails = {
@@ -21,7 +23,7 @@ export const AddFloor = ({ newFloor, setNewFloor, floors, setFloors }) => {
                 description: description,
             }
             const data = await addFloor(floorDetails);
-            setFloors([...floors, data]);
+            addNewFloor(data);
             setFloorNumber("");
             setDescription("");
             handleClose();
@@ -36,7 +38,7 @@ export const AddFloor = ({ newFloor, setNewFloor, floors, setFloors }) => {
                 <Modal.Header closeButton>
                     <Modal.Title>Add Floor</Modal.Title>
                 </Modal.Header>
-                <form onSubmit={addNewFloor} className="flex items-center">
+                <form onSubmit={handleAddNewFloor} className="flex items-center">
                     <Modal.Body>
                         <div className="form-group">
                             <label htmlFor="floorNumber" className='required-label'>Floor Number</label>

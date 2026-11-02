@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getAllParkedDetails } from '../../../../services/authServices'
 import { toast } from "react-toastify"
-import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Slot.css'
-import { useAddSlot } from '../../../../context/AddSlotContext';
 
 const formatEntryTime = (entryTime) => {
     const date = new Date(entryTime);
@@ -19,8 +18,7 @@ export const Slot = ({ selectedFloor, parkedRefreshVersion, searchVehicle }) => 
     const [parked, setParked] = useState([]);
 
     const mergedSlots = slots.map(slot => {
-        console.log('searchVehicle', searchVehicle)
-        if(searchVehicle === null || searchVehicle === '') {
+        if (searchVehicle === null || searchVehicle === '') {
             const match = parked.find(
                 p => p.slotId === slot.slotId && p.status.toLowerCase() === slot.status.toLowerCase()
             );
@@ -29,9 +27,10 @@ export const Slot = ({ selectedFloor, parkedRefreshVersion, searchVehicle }) => 
             const match = parked.filter(
                 p => p.vehicleNumber.includes(searchVehicle)
             );
-            return match ? { ...slot, ...match } : slot;
+            return match.length > 0 ? { ...slot, ...match[0] } : slot;
         }
     }).sort((a, b) => String(a.slotNumber).localeCompare(String(b.slotNumber), undefined, { numeric: true }));
+    console.log('mergedSlots', mergedSlots);
 
     useEffect(() => {
         async function fetchParkedDetails() {
