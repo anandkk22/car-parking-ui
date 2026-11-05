@@ -7,8 +7,11 @@ import { PriceDisplay } from '../../../services/service';
 import Form from 'react-bootstrap/Form';
 import { useCheckInOut } from '../../../context/CheckinContext';
 import { CheckoutPage } from '../checkout/CheckoutPage';
+import Pagination from 'react-bootstrap/Pagination';
 
 export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) => {
+    const itemsPerPage = 10;
+    const [currentPage, setCurrentPage] = useState(1);
     const { checkOutSlot, checkInVersion } = useCheckInOut();
     const currentDate = new Date();
     const date = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
@@ -29,18 +32,37 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) =
         )
         : dailyReport;
 
+    const paginatedRows = reportRows.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    const totalPages = Math.ceil(reportRows.length / itemsPerPage);
+
     const fetchReport = useCallback(async () => {
         try {
             const data = await fetchDailyReport(fromDate, toDate);
             if (!Array.isArray(data)) {
                 throw new Error("Invalid floors response");
             }
-            setNoRecords(data.length === 0);
-            setDailyReport([...data].sort((a, b) => Number(b.transactionId) - Number(a.transactionId)));
+            setDailyReport([...data].sort((a, b) => Number(b.transactionId) - Number(a.transactionId)));            
+            setCurrentPage(1);
         } catch (error) {
             toast.error(error.message);
         }
     }, [fromDate, toDate]);
+
+    const items = Array.from({ length: totalPages }, (_, index) => {
+        const page = index + 1;
+        return (
+            <Pagination.Item
+                key={page}
+                active={page === currentPage}
+                onClick={() => setCurrentPage(page)}
+            >
+                {page}
+            </Pagination.Item>
+        );
+    });
     
     const handleClose = () => {
         setcheckoutSlot(false);
@@ -154,143 +176,74 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) =
                         }
                     </div>
                     {
-                        !noRecords && <div className="table-responsive">
-                            <table className="table">
-                                <thead className="table-active">
-                                    <tr>
-                                        <th width="5%">Id</th>
-                                        <th width="10%">Date</th>
-                                        <th width="12%">Vehicle Number</th>
-                                        <th width="7%">Type</th>
-                                        <th width="7%">Floor No</th>
-                                        <th width="7%">Slot No</th>
-                                        <th width="7%">Entry</th>
-                                        <th width="7%">Exit</th>
-                                        <th width="10%">Total Hrs</th>
-                                        <th width="5%">Amount</th>
-                                        <th width="5%">Payment</th>
-                                        <th width="5%">Status</th>
-                                        <th width="5%">Created</th>
-                                        <th width="5%"></th>
-                                        <th width="5%"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {reportRows.map((report) => (
+                         reportRows.length > 0 && <div className="container">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead class="table-active">
+                                        <tr>
+                                            <th scope="col">Id</th>
+                                            <th scope="col">Date</th>
+                                            <th scope="col">Car Number</th>
+                                            <th scope="col">Type</th>
+                                            <th scope="col">Floor No</th>
+                                            <th scope="col">Slot No</th>
+                                            <th scope="col">Entry</th>
+                                            <th scope="col">Exit</th>
+                                            <th scope="col">Total Hrs</th>
+                                            <th scope="col">Amount</th>
+                                            <th scope="col">Payment</th>
+                                            <th scope="col">Status</th>
+                                            <th scope="col">Created</th>
+                                            <th scope="col"></th>
+                                            <th scope="col"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {paginatedRows.map((report) => (
                                             <tr key={report.transactionId}>
                                                 <td>{report.transactionId}</td>
                                                 <td>{formatDate(report.date, true)}</td>
                                                 <td>{report.vehicleNumber}</td>
                                                 <td>{report.pricingType}</td>
-                                                <td>{report.floorId}</td>
-                                                <td>{report.slotNumber}</td>
+                                                <td className='text-center'>{report.floorId}</td>
+                                                <td className='text-center'>{report.slotNumber}</td>
                                                 <td>{formatDate(report.entryTime, false)}</td>
                                                 <td>{report.exitTime ? formatDate(report.exitTime, false) : ' '}</td>
                                                 <td>{report.totalHrs || ' '}</td>
-                                                <td>{PriceDisplay(report.amount) || ' '}</td>
+                                                <td className='text-end'>{PriceDisplay(report.amount) || ' '}</td>
                                                 <td>{report.modeOfPayment || ' '}</td>
                                                 <td>{report.status}</td>
                                                 <td>{report.status}</td>
                                                 <td><i className="bi bi-printer-fill"></i></td>
                                                 <td onClick={() => handleCheckout(report)}><i className="bi bi-cart4 cursor-pointer"></i></td>
                                             </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="d-flex justify-content-end p-2">
+                                {totalPages > 1 && (
+                                    <Pagination className="mb-0">
+                                        <Pagination.Prev
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage((page) => page - 1)}
+                                        />
+                                        {items}
+                                        <Pagination.Next
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage((page) => page + 1)}
+                                        />
+                                    </Pagination>
+                                )}
+                            </div>
                         </div>
                     } {
-                        noRecords && <div className='text-center'>No Records Found</div>
+                        reportRows.length === 0 && <div className='text-center'>No Records Found</div>
                     }
 
                 </Modal.Body>
             </Modal>
             <CheckoutPage areYouSure={areYouSure} handleClose={handleClose} selectedVehicle={selectedVehicle} handleCancel={handleCancel} onConfirm={onConfirm} showPayment={showPayment} pricingType={pricingType} selectgedDefaultPayment={selectgedDefaultPayment} onPaymentSelection={onPaymentSelection} submitPayment={submitPayment}   />
-            {/* <Modal show={areYouSure} onHide={handleClose} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>Are you Sure you?</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <div class="card border-0 fs-8">
-                        <div class="card-body">
-                            <p class="card-text mb-1">Receipt : <b>{selectedVehicle.transactionId}</b></p>
-                            <p class="card-text mb-1">Pricing Type : <b>{selectedVehicle.pricingType}</b></p>
-                            <p class="card-text mb-1">Car Number: <b>{selectedVehicle.vehicleNumber}</b></p>
-                            <p class="card-text mb-1">Entry: <b>{formatDate(selectedVehicle.entryTime, false)}</b></p>
-                        </div>
-                    </div>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button type='button' variant="secondary" onClick={handleCancel}>
-                        Cancel
-                    </Button>
-                    <Button type='button' variant="success" onClick={onConfirm} >
-                        Confirm
-                    </Button>
-                </Modal.Footer>
-            </Modal> */}
-            {/* <Modal show={showPayment} onHide={handleClose} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>{pricingType ? 'Select Payment Mode': 'Checkout'}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <div class="card border-0 fs-8">
-                        <div class="card-body pt-0 pb-0">
-                            <table>
-                                <tr class="thead-light">
-                                    <td className='p-1'>Receipt:</td>
-                                    <td className='p-1'><b>{selectedVehicle.transactionId}</b></td>
-                                    <td className='p-1'>Pricing Type:</td>
-                                    <td className='p-1'><b>{selectedVehicle.pricingType}</b></td>
-                                </tr>
-                                <tr class="thead-light">
-                                    <td className='p-1'>Car Number:</td>
-                                    <td className='p-1'><b>{selectedVehicle.vehicleNumber}</b></td>
-                                    <td className='p-1'></td>
-                                    <td className='p-1'></td>
-                                </tr>
-                                <tr class="thead-light">
-                                    <td className='p-1'>CheckIn:</td>
-                                    <td className='p-1'><b>{formatDate(selectedVehicle.entryTime, false)}</b></td>
-                                    <td className='p-1'>CheckOut:</td>
-                                    <td className='p-1'><b>{formatDate(selectedVehicle.exitTime, false)}</b></td>
-                                </tr>
-                                 <tr class="thead-light">
-                                    <td className='p-1'>Total Hours:</td>
-                                    <td className='p-1'><b>{selectedVehicle.totalHrs}</b></td>
-                                    <td className='p-1'>Amount:</td>
-                                    <td className='p-1'><b>{selectedVehicle.amount}</b></td>
-                                </tr>
-                            </table>
-                            {pricingType &&
-                                <div className="form-group mt-4 p-1">
-                                <label htmlFor="paymentMode" className=''>Select Payment Mode</label>
-                                <div className='d-flex mb-2'>
-                                    <div className="form-check me-3">
-                                        <input className="form-check-input" type="radio" name="payment" defaultChecked={selectgedDefaultPayment} id="online" value="online"
-                                            onChange={onPaymentSelection} />
-                                        <label className="form-check-label" for="online">
-                                            Online
-                                        </label>
-                                    </div>
-                                    <div className="form-check">
-                                        <input className="form-check-input" type="radio" name="payment" id="cash" value="cash"
-                                            onChange={onPaymentSelection} />
-                                        <label className="form-check-label" for="cash">
-                                            Cash
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            }
-                        </div>
-                    </div>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button type='button' variant="success" onClick={submitPayment} >
-                        Submit
-                    </Button>
-                </Modal.Footer>
-            </Modal> */}
         </div>
     )
 }
