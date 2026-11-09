@@ -6,6 +6,7 @@ table thead tr th {
 table tbody tr td {
   font-size: 13px !important;
   font-weight: normal;
+  padding: 5px 8px !important;
 }
 
 /* .modal-content {
@@ -30,4 +31,12 @@ table tbody tr td {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.color-blue {
+  color: DodgerBlue;
+}
+
+.color-gray {
+  color: gray;
 }

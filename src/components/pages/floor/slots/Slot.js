@@ -30,7 +30,6 @@ export const Slot = ({ selectedFloor, parkedRefreshVersion, searchVehicle }) => 
             return match.length > 0 ? { ...slot, ...match[0] } : slot;
         }
     }).sort((a, b) => String(a.slotNumber).localeCompare(String(b.slotNumber), undefined, { numeric: true }));
-    console.log('mergedSlots', mergedSlots);
 
     useEffect(() => {
         async function fetchParkedDetails() {

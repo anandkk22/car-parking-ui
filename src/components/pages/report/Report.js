@@ -1,36 +1,68 @@
 import { Modal } from 'react-bootstrap';
 import './Report.css'
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { fetchDailyReport, formatDate, checkout, payment } from '../../../services/authServices';
+import { fetchDailyReport, formatDate, checkout, payment, getAllParkedDetails } from '../../../services/authServices';
 import { PriceDisplay } from '../../../services/service';
 import Form from 'react-bootstrap/Form';
 import { useCheckInOut } from '../../../context/CheckinContext';
 import { CheckoutPage } from '../checkout/CheckoutPage';
 import Pagination from 'react-bootstrap/Pagination';
+// import { VehicleProps } from './VehicleProps'
 
-export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) => {
+
+/**
+ * @typedef {Object} VehicleProps
+ * @property {string} address
+ * @property {number} amount
+ * @property {string} customerName
+ * @property {string} date
+ * @property {string} entryTime
+ * @property {string} exitTime
+ * @property {number} floorId
+ * @property {string} mobileNumber
+ * @property {string} modeOfPayment
+ * @property {string} pricingType
+ * @property {number} slotId
+ * @property {number} slotNumber
+ * @property {string} status
+ * @property {string} totalHrs
+ * @property {number} transactionId
+ * @property {string} vehicleNumber
+ */
+
+
+export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, setIsCheckout, isCheckout }) => {
     const itemsPerPage = 10;
     const [currentPage, setCurrentPage] = useState(1);
     const { checkOutSlot, checkInVersion } = useCheckInOut();
     const currentDate = new Date();
     const date = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
-    const [dailyReport, setDailyReport] = useState([]);
+    const [report, setDailyReport] = useState([]);
     const [fromDate, setFromDate] = useState(date);
     const [toDate, setToDate] = useState(date);
     const [search, setSearch] = useState('');
     const [noRecords, setNoRecords] = useState(false);
     const [areYouSure, setAreYouSure] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
-    const [selectedVehicle, setSelectedVehicle] = useState({});
-    const [selectedTrId, setSelectedTrId] = useState('');
+    const [selectedVehicle, setSelectedVehicle] = useState(/** @type {VehicleProps} */({address: '', amount: 0, customerName: '', date: '', entryTime: '', exitTime: '', mobileNumber: '', pricingType: '', slotId: 0, slotNumber: 0, status : '', totalHrs : '', transactionId: 0, vehicleNumber: '' }));
     const [selectgedDefaultPayment, setSelectgedDefaultPayment] = useState('online');
     const [pricingType, setPricingType] = useState(false);
-    const reportRows = search
-        ? dailyReport.filter(({ vehicleNumber = '' }) =>
-            String(vehicleNumber).toLowerCase().includes(search.toLowerCase())
-        )
-        : dailyReport;
+    const normalizedSearch = search.trim().toLowerCase();
+    // let selectedTrId = '';
+    const reportRows = useMemo(() => {
+        const baseRows = isCheckout
+            ? report.filter(({ status = '' }) => status === 'occupied' || status === 'Ready to Exit')
+            : report;
+
+        if (!normalizedSearch) {
+            return baseRows;
+        }
+
+        return baseRows.filter(({ vehicleNumber = '' }) =>
+            String(vehicleNumber).toLowerCase().includes(normalizedSearch)
+        );
+    }, [report, isCheckout, normalizedSearch]);
 
     const paginatedRows = reportRows.slice(
         (currentPage - 1) * itemsPerPage,
@@ -40,16 +72,17 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) =
 
     const fetchReport = useCallback(async () => {
         try {
-            const data = await fetchDailyReport(fromDate, toDate);
+            const data = isCheckout ? await getAllParkedDetails() : await fetchDailyReport(fromDate, toDate);
             if (!Array.isArray(data)) {
                 throw new Error("Invalid floors response");
             }
-            setDailyReport([...data].sort((a, b) => Number(b.transactionId) - Number(a.transactionId)));            
+            setNoRecords(data.length === 0);
+            setDailyReport([...data].sort((a, b) => Number(b.transactionId) - Number(a.transactionId)));
             setCurrentPage(1);
         } catch (error) {
             toast.error(error.message);
         }
-    }, [fromDate, toDate]);
+    }, [fromDate, toDate, isCheckout]);
 
     const items = Array.from({ length: totalPages }, (_, index) => {
         const page = index + 1;
@@ -63,7 +96,7 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) =
             </Pagination.Item>
         );
     });
-    
+
     const handleClose = () => {
         setcheckoutSlot(false);
         setShowPayment(false);
@@ -72,41 +105,58 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) =
         setToDate(date)
         setSelectgedDefaultPayment('online');
         setSearch('')
+        setIsCheckout(false);
     }
 
     const handleCancel = () => {
         setcheckoutSlot(true);
         setAreYouSure(false);
     }
-
+  
     const handleCheckout = (selected) => {
         setSelectedVehicle(selected);
-        if(selected.pricingType !== 'free') {
-            setPricingType(true)
+
+        if (selected.pricingType !== 'free') {
+            setPricingType(true);
         } else {
-            setPricingType(false)
+            setPricingType(false);
         }
+
         handleClose();
-        setAreYouSure(true);
-        setShowPayment(false)
-    }
+
+        if (selected.status === 'Ready to Exit') {
+            onConfirm(selected);
+            setShowPayment(true);
+        } else {
+            setAreYouSure(true);
+        }
+    };
+
+    useEffect(() => {
+        console.log('Updated:', selectedVehicle.transactionId);
+    }, [selectedVehicle]);
 
     const findVehicle = (searchTerm) => {
         setSearch(searchTerm);
     }
 
-    async function onConfirm() {
+    async function onConfirm(selected) {
         try {
-            const data = await checkout(selectedVehicle.transactionId);
+            const data = await checkout(selected.transactionId ?? selectedVehicle.transactionId);
             if (data) {
                 checkOutSlot(data);
+                const transactionId = data.transactionId ?? selectedVehicle.transactionId;
+                setDailyReport((currentReport) => currentReport.map((transaction) =>
+                    String(transaction.transactionId) === String(transactionId)
+                        ? { ...transaction, ...data, status: data.status || 'Ready to Exit' }
+                        : transaction
+                ));
                 try {
                     await onCheckoutCompleted();
                 } catch (error) {
                     toast.error(`Checkout succeeded, but the slot display could not be refreshed: ${error.message}`);
                 }
                 setSelectedVehicle(data);
-                setSelectedTrId(selectedVehicle.transactionId)
                 handleClose();
                 setcheckoutSlot(false);
                 setAreYouSure(false);
@@ -149,34 +199,41 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) =
                     <Modal.Title className='fs-5'>Report generated from {formatDate(fromDate, true)} to {formatDate(toDate, true)}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <div className='gap-2 d-flex'>
-                        <Form.Group controlId="fromDate" className="d-flex mb-3">
-                            <Form.Control className='w-15'
-                                type="date"
-                                value={fromDate}
-                                onChange={(e) => setFromDate(e.target.value)}
-                            />
-                        </Form.Group>
-                        <Form.Group controlId="toDate" className="d-flex mb-3">
-                            <Form.Control className='w-15'
-                                type="date"
-                                value={toDate}
-                                onChange={(e) => setToDate(e.target.value)}
-                            />
-                        </Form.Group>
+                    <div className='gap-2 d-flex ps-2 pe-4'>
                         {
-                            !noRecords &&
-                            <Form.Group controlId="search" className="d-flex justify-content-end w-100 mb-3">
-                                <Form.Control
-                                    type="text" className='w-15'
-                                    value={search} placeholder='Search By Vehicle Number'
-                                    onChange={(e) => findVehicle(e.target.value)}
-                                />
-                            </Form.Group>
+                            !isCheckout && <div className='col-sm-6 ps-1 gap-2 d-flex align-items-center'>
+                                <Form.Group controlId="fromDate" className="d-flex mb-3">
+                                    <Form.Control className='w-15'
+                                        type="date"
+                                        value={fromDate}
+                                        onChange={(e) => setFromDate(e.target.value)}
+                                    />
+                                </Form.Group>
+                                <Form.Group controlId="toDate" className="d-flex mb-3">
+                                    <Form.Control className='w-15'
+                                        type="date"
+                                        value={toDate}
+                                        onChange={(e) => setToDate(e.target.value)}
+                                    />
+                                </Form.Group>
+                            </div>
                         }
+
+                        <div className={`d-flex justify-content-end align-items-center ${isCheckout ? 'col-sm-12' : 'col-sm-6'}`}>
+                            {
+                                !noRecords &&
+                                <Form.Group controlId="search" className="d-flex justify-content-end w-100 mb-3">
+                                    <Form.Control
+                                        type="text" className='w-15'
+                                        value={search} placeholder='Search By Vehicle Number'
+                                        onChange={(e) => findVehicle(e.target.value)}
+                                    />
+                                </Form.Group>
+                            }
+                        </div>
                     </div>
                     {
-                         reportRows.length > 0 && <div className="container">
+                        reportRows.length > 0 && <div className="container">
                             <div class="table-responsive">
                                 <table class="table">
                                     <thead class="table-active">
@@ -214,8 +271,8 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) =
                                                 <td>{report.modeOfPayment || ' '}</td>
                                                 <td>{report.status}</td>
                                                 <td>{report.status}</td>
-                                                <td><i className="bi bi-printer-fill"></i></td>
-                                                <td onClick={() => handleCheckout(report)}><i className="bi bi-cart4 cursor-pointer"></i></td>
+                                                <td><button type="button" className="btn btn-link p-0 text-reset" aria-label="print"><i className="bi bi-printer-fill cursor-pointer color-blue"></i></button></td>
+                                                <td><button type="button" className="btn btn-link p-0 text-reset" disabled={report.status === 'Exit'} key={report.transactionId} onClick={() => handleCheckout(report)} aria-label="Checkout"><i className={`bi bi-cart4 cursor-pointer ${report.status === 'Exit' ? 'color-gray' : 'color-blue'}`}></i></button></td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -243,7 +300,7 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted }) =
 
                 </Modal.Body>
             </Modal>
-            <CheckoutPage areYouSure={areYouSure} handleClose={handleClose} selectedVehicle={selectedVehicle} handleCancel={handleCancel} onConfirm={onConfirm} showPayment={showPayment} pricingType={pricingType} selectgedDefaultPayment={selectgedDefaultPayment} onPaymentSelection={onPaymentSelection} submitPayment={submitPayment}   />
+            <CheckoutPage areYouSure={areYouSure} handleClose={handleClose} selectedVehicle={selectedVehicle} handleCancel={handleCancel} onConfirm={onConfirm} showPayment={showPayment} pricingType={pricingType} selectgedDefaultPayment={selectgedDefaultPayment} onPaymentSelection={onPaymentSelection} submitPayment={submitPayment} />
         </div>
     )
 }

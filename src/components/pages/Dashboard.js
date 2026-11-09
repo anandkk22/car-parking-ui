@@ -27,12 +27,15 @@ export const Dashboard = () => {
     const [allocateNewSlab, setAllocateNewSlab] = useState(false);
     const [checkoutSlot, setcheckoutSlot] = useState(false);
     const [searchVehicle, setSearchSearchVehicle] = useState('');
+    const [isCheckout, setIsCheckout] = useState(false);
     const reserved = floorSlots.filter((slot) => slot.status === 'reserved');
 
     const addFloor = () => setNewFloor(true);
     const addSlot = () => setNewSlot(true);
     const addAllocateSlab = () => setAllocateNewSlab(true);
     const onCheckoutSlot = () => setcheckoutSlot(true);
+     const totalAvailableWidth = floorSlots.length > 0 ? (totalAvailableSlot / floorSlots.length) * 100 : 0;
+    const totalOccupiedWidth = floorSlots.length > 0 ? (totalOccupiedSlot / floorSlots.length) * 100 : 0;
 
     const refreshParkingSlots = useCallback(async () => {
         const data = await getParkingSlots();
@@ -52,6 +55,15 @@ export const Dashboard = () => {
         const inputValue = e.target.value.toLowerCase();
         setSearchSearchVehicle(inputValue);
     }
+
+    const showOnlyCheckoutSlots = () => {
+        // const filteredSlots = floorSlots.filter((slot) => slot.status === 'Ready to Exit' || slot.status === 'occupied');
+        // setselectedFloor(filteredSlots);
+        setIsCheckout(true);
+        setcheckoutSlot(true);
+    }
+
+
     useEffect(() => {
         async function fetchFloorDetails() {
             try {
@@ -159,7 +171,7 @@ export const Dashboard = () => {
                                                 <div className="fs-5 card-title fw-bold">Available Slots</div>
                                                 <div className='align-items-center justify-content-between'>
                                                     <div className="progress" style={{ height: '30px' }}>
-                                                        <div className="progress-bar" role="progressbar" aria-valuenow={totalAvailableSlot} aria-valuemin="0" aria-valuemax={floorSlots.length - reserved.length}>{totalAvailableSlot || 0}</div>
+                                                        <div className="progress-bar" role="progressbar" style={{ width: totalAvailableWidth + '%' }} aria-valuenow={totalAvailableSlot} aria-valuemin="0" aria-valuemax={floorSlots.length - reserved.length}>{totalAvailableSlot || 0}</div>
                                                     </div>
                                                 </div>
                                                 <button className="small btn btn-link mt-3 ps-0 fs-13" onClick={addAllocateSlab} disabled={totalAvailableSlot === 0}>
@@ -174,12 +186,17 @@ export const Dashboard = () => {
                                                 <div className="fs-5 card-title fw-bold">Occupied Slots</div>
                                                 <div className='align-items-center justify-content-between'>
                                                     <div className="progress" style={{ height: '30px' }}>
-                                                        <div className="progress-bar bg-danger" role="progressbar">{totalOccupiedSlot}</div>
+                                                        <div className="progress-bar bg-danger" role="progressbar" style={{ width: totalOccupiedWidth + '%' }} aria-valuenow={totalOccupiedSlot} aria-valuemin="0" aria-valuemax={totalOccupiedSlot - reserved.length}>{totalOccupiedSlot || 0}</div>
                                                     </div>
                                                 </div>
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <button className="small btn btn-link mt-3 ps-0 fs-13" onClick={showOnlyCheckoutSlots}>
+                                                        <i className="bi bi-dash-square me-2 text-primary"></i><span className="text-primary">Checkout</span>
+                                                    </button>
                                                 <button className="small btn btn-link mt-3 ps-0 fs-13" onClick={onCheckoutSlot}>
-                                                    <i className="bi bi-dash-square me-2 text-primary"></i><span className="text-primary">Checkout</span>
+                                                    <i className="bi bi-calendar-date me-2 text-primary"></i><span className="text-primary">Report</span>
                                                 </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -201,6 +218,8 @@ export const Dashboard = () => {
                 setcheckoutSlot={setcheckoutSlot}
                 checkoutSlot={checkoutSlot}
                 onCheckoutCompleted={handleParkingDataChanged}
+                setIsCheckout={setIsCheckout}
+                isCheckout={isCheckout}
             />
         </main>
     );

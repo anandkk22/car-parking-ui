@@ -1,7 +1,7 @@
 import { Modal, Button } from 'react-bootstrap';
 import { formatDate } from '../../../services/authServices';
 
-export const CheckoutPage = ({ areYouSure, handleClose, selectedVehicle, handleCancel, showPayment, onConfirm, pricingType, selectgedDefaultPayment, onPaymentSelection, submitPayment }) => {
+export const CheckoutPage = ({ areYouSure, handleClose, selectedVehicle, handleCancel, showPayment, onConfirm, pricingType, selectgedDefaultPayment, onPaymentSelection, submitPayment  }) => {
     return (
         <>
             <Modal show={areYouSure} onHide={handleClose} centered>
@@ -35,6 +35,7 @@ export const CheckoutPage = ({ areYouSure, handleClose, selectedVehicle, handleC
                     <div class="card border-0 fs-8">
                         <div class="card-body pt-0 pb-0">
                             <table>
+                                <tbody>
                                 <tr class="thead-light">
                                     <td className='p-1'>Receipt:</td>
                                     <td className='p-1'><b>{selectedVehicle.transactionId}</b></td>
@@ -59,6 +60,7 @@ export const CheckoutPage = ({ areYouSure, handleClose, selectedVehicle, handleC
                                     <td className='p-1'>Amount:</td>
                                     <td className='p-1'><b>{selectedVehicle.amount}</b></td>
                                 </tr>
+                                </tbody>
                             </table>
                             {pricingType &&
                                 <div className="form-group mt-4 p-1">
