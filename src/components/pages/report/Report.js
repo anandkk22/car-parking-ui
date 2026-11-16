@@ -3,12 +3,13 @@ import './Report.css'
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { fetchDailyReport, formatDate, checkout, payment, getAllParkedDetails } from '../../../services/authServices';
-import { PriceDisplay } from '../../../services/service';
+import { formatPrice } from '../../../services/service';
 import Form from 'react-bootstrap/Form';
 import { useCheckInOut } from '../../../context/CheckinContext';
 import { CheckoutPage } from '../checkout/CheckoutPage';
 import Pagination from 'react-bootstrap/Pagination';
-// import { VehicleProps } from './VehicleProps'
+import { handleCheckInPrint } from '../../../services/service';
+import { getPrintSlotContents } from '../../other/PrintSlot';
 
 
 /**
@@ -29,6 +30,7 @@ import Pagination from 'react-bootstrap/Pagination';
  * @property {string} totalHrs
  * @property {number} transactionId
  * @property {string} vehicleNumber
+ * @property {string} lastModifiedBy
  */
 
 
@@ -39,17 +41,22 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
     const currentDate = new Date();
     const date = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
     const [report, setDailyReport] = useState([]);
+    const [report1, setDailyReport1] = useState([]);
     const [fromDate, setFromDate] = useState(date);
     const [toDate, setToDate] = useState(date);
     const [search, setSearch] = useState('');
     const [noRecords, setNoRecords] = useState(false);
     const [areYouSure, setAreYouSure] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
-    const [selectedVehicle, setSelectedVehicle] = useState(/** @type {VehicleProps} */({address: '', amount: 0, customerName: '', date: '', entryTime: '', exitTime: '', mobileNumber: '', pricingType: '', slotId: 0, slotNumber: 0, status : '', totalHrs : '', transactionId: 0, vehicleNumber: '' }));
+    const [selectedVehicle, setSelectedVehicle] = useState(/** @type {VehicleProps} */({ address: '', amount: 0, customerName: '', date: '', entryTime: '', exitTime: '', mobileNumber: '', pricingType: '', slotId: 0, slotNumber: 0, status: '', totalHrs: '', transactionId: 0, vehicleNumber: '' }));
     const [selectgedDefaultPayment, setSelectgedDefaultPayment] = useState('online');
     const [pricingType, setPricingType] = useState(false);
     const normalizedSearch = search.trim().toLowerCase();
-    // let selectedTrId = '';
+    const [total, setTotal] = useState(0);
+    const [paymentTypes, setPaymentTypes] = useState({
+        online: true,
+        cash: true,
+    });
     const reportRows = useMemo(() => {
         const baseRows = isCheckout
             ? report.filter(({ status = '' }) => status === 'occupied' || status === 'Ready to Exit')
@@ -63,16 +70,22 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
             String(vehicleNumber).toLowerCase().includes(normalizedSearch)
         );
     }, [report, isCheckout, normalizedSearch]);
-
     const paginatedRows = reportRows.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
+    // console.log('paymentTypes', paymentTypes);
+    // console.log('reportRows', reportRows);
+    // const updatedReport = [...reportRows];
+
+    
+
     const totalPages = Math.ceil(reportRows.length / itemsPerPage);
 
     const fetchReport = useCallback(async () => {
         try {
             const data = isCheckout ? await getAllParkedDetails() : await fetchDailyReport(fromDate, toDate);
+            setTotal(data.map((item) => item.amount).reduce((a, c) => a + c, 0));
             if (!Array.isArray(data)) {
                 throw new Error("Invalid floors response");
             }
@@ -112,7 +125,7 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
         setcheckoutSlot(true);
         setAreYouSure(false);
     }
-  
+
     const handleCheckout = (selected) => {
         setSelectedVehicle(selected);
 
@@ -132,8 +145,52 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
         }
     };
 
+    const handlePaymentTypeChange = (type) => {
+        const updatedPaymentTypes = {
+            ...paymentTypes,
+            [type]: !paymentTypes[type],
+        };
+        setPaymentTypes(updatedPaymentTypes);
+        
+        const updatedReport = [...report];
+        
+        const selectedTypes = Object.keys(updatedPaymentTypes).filter(
+            (paymentType) => updatedPaymentTypes[paymentType]
+        );
+        
+        const x = updatedReport.filter((ele) => selectedTypes.includes(ele.modeOfPayment))
+        setDailyReport1(x);
+        console.log('x', x);
+        console.log('report1', report1);
+
+        // setDailyReport(
+        //     selectedTypes.length === 0
+        //         ? []
+        //         : report.filter((ele) => selectedTypes.includes(ele.modeOfPayment))
+        // );
+        // switch (updatedPaymentTypes) {
+        //     case updatedPaymentTypes.online && updatedPaymentTypes.cash:
+        //         // setPaymentTypes({ online: true, cash: true });
+        //         return report;
+        //     case updatedPaymentTypes.online && !updatedPaymentTypes.cash:
+        //         // setPaymentTypes({ online: true, cash: false });
+        //         setDailyReport(report.filter((ele) => ele.modeOfPayment === 'online'));
+        //     case !updatedPaymentTypes.online && updatedPaymentTypes.cash:
+        //         // setPaymentTypes({ online: false, cash: true });
+        //         setDailyReport(report.filter((ele) => ele.modeOfPayment === 'cash'));
+        // }
+    };
+
     useEffect(() => {
-        console.log('Updated:', selectedVehicle.transactionId);
+        //  console.log('paymentTypes', paymentTypes);
+        // const selectedType = Object.keys(paymentTypes).find(
+        //     key => paymentTypes[key]
+        // );
+        // setDailyReport(report.filter((ele) => paymentTypes[ele.modeOfPayment]));
+        
+    }, [paymentTypes, report]);
+
+    useEffect(() => {
     }, [selectedVehicle]);
 
     const findVehicle = (searchTerm) => {
@@ -178,6 +235,7 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
                 fetchReport();
                 toast.success("Checkout submitted successfully");
                 handleClose();
+                handlePrint(data);
                 setcheckoutSlot(false);
                 setAreYouSure(false);
                 setShowPayment(false)
@@ -192,44 +250,88 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
     useEffect(() => {
         fetchReport();
     }, [fetchReport, checkInVersion])
+
+    const handlePrint = (report) => {
+        const updatedReport = {
+            ...report,
+            exitTime: report.exitTime ? report.exitTime : ' ',
+            totalHrs: report.exitTime ? report.totalHrs : ' ',
+            amount: report.exitTime ? report.amount : ' '
+        }
+        try {
+            handleCheckInPrint(getPrintSlotContents(updatedReport));
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
     return (
         <div>
-            <Modal show={checkoutSlot} onHide={handleClose} modal-dialog centered size="xl" className='ps-3'>
+            <Modal show={checkoutSlot} onHide={handleClose} keyboard={false} backdrop="static" modal-dialog centered size="xl" className='ps-3'>
                 <Modal.Header closeButton>
                     <Modal.Title className='fs-5'>Report generated from {formatDate(fromDate, true)} to {formatDate(toDate, true)}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <div className='gap-2 d-flex ps-2 pe-4'>
-                        {
-                            !isCheckout && <div className='col-sm-6 ps-1 gap-2 d-flex align-items-center'>
-                                <Form.Group controlId="fromDate" className="d-flex mb-3">
-                                    <Form.Control className='w-15'
-                                        type="date"
-                                        value={fromDate}
-                                        onChange={(e) => setFromDate(e.target.value)}
-                                    />
-                                </Form.Group>
-                                <Form.Group controlId="toDate" className="d-flex mb-3">
-                                    <Form.Control className='w-15'
-                                        type="date"
-                                        value={toDate}
-                                        onChange={(e) => setToDate(e.target.value)}
-                                    />
-                                </Form.Group>
-                            </div>
-                        }
+                        <div className='container p-1 pe-2 pb-0'>
+                            <div className='row'>
+                                {
+                                    !isCheckout && <div className='col-sm-8 ps-1 gap-2 d-flex align-items-center'>
+                                        <div className='col-sm-3'>
+                                            <Form.Group controlId="fromDate" className="d-flex mb-3">
+                                                <Form.Control className='w-15'
+                                                    type="date"
+                                                    value={fromDate}
+                                                    onChange={(e) => setFromDate(e.target.value)}
+                                                />
+                                            </Form.Group>
+                                        </div>
+                                        <div className='col-sm-3'>
+                                            <Form.Group controlId="toDate" className="d-flex mb-3">
+                                                <Form.Control className='w-15'
+                                                    type="date"
+                                                    value={toDate}
+                                                    onChange={(e) => setToDate(e.target.value)}
+                                                />
+                                            </Form.Group>
+                                        </div>
+                                        <div className='col-sm-3 w-120px'>
+                                            <Form.Group controlId="toDate" className="fs-14 d-flex mb-3">
+                                                Payment Type:
+                                            </Form.Group>
+                                        </div>
+                                        <div className='col-sm-3 mb-2'>
+                                            <Form.Group controlId="paymentTypes" className="gap-2 d-flex">
+                                                <Form.Check
+                                                    type="checkbox"
+                                                    label="Online"
+                                                    checked={paymentTypes.online}
+                                                    onChange={() => handlePaymentTypeChange('online')}
+                                                />
 
-                        <div className={`d-flex justify-content-end align-items-center ${isCheckout ? 'col-sm-12' : 'col-sm-6'}`}>
-                            {
-                                !noRecords &&
-                                <Form.Group controlId="search" className="d-flex justify-content-end w-100 mb-3">
-                                    <Form.Control
-                                        type="text" className='w-15'
-                                        value={search} placeholder='Search By Vehicle Number'
-                                        onChange={(e) => findVehicle(e.target.value)}
-                                    />
-                                </Form.Group>
-                            }
+                                                <Form.Check
+                                                    type="checkbox"
+                                                    label="Cash"
+                                                    checked={paymentTypes.cash}
+                                                    onChange={() => handlePaymentTypeChange('cash')}
+                                                />
+                                            </Form.Group>
+                                        </div>
+                                    </div>
+                                }
+
+                                <div className={`d-flex justify-content-end align-items-center ${isCheckout ? 'col-sm-12' : 'col-sm-4'}`}>
+                                    {
+                                        !noRecords &&
+                                        <Form.Group controlId="search" className="d-flex justify-content-end w-100 mb-3">
+                                            <Form.Control
+                                                type="text" className='w-15'
+                                                value={search} placeholder='Search By Vehicle Number'
+                                                onChange={(e) => findVehicle(e.target.value)}
+                                            />
+                                        </Form.Group>
+                                    }
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {
@@ -265,19 +367,24 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
                                                 <td className='text-center'>{report.floorId}</td>
                                                 <td className='text-center'>{report.slotNumber}</td>
                                                 <td>{formatDate(report.entryTime, false)}</td>
-                                                <td>{report.exitTime ? formatDate(report.exitTime, false) : ' '}</td>
-                                                <td>{report.totalHrs || ' '}</td>
-                                                <td className='text-end'>{PriceDisplay(report.amount) || ' '}</td>
+                                                <td>{report.exitTime && report.status === 'Exit' ? formatDate(report.exitTime, false) : ' '}</td>
+                                                <td>{report.status === 'Exit' ? report.totalHrs || ' ' : ''}</td>
+                                                <td className='text-end'>{report.status === 'Exit' ? formatPrice(report.amount) || ' ' : ''}</td>
                                                 <td>{report.modeOfPayment || ' '}</td>
                                                 <td>{report.status}</td>
-                                                <td>{report.status}</td>
-                                                <td><button type="button" className="btn btn-link p-0 text-reset" aria-label="print"><i className="bi bi-printer-fill cursor-pointer color-blue"></i></button></td>
+                                                <td>{report.lastModifiedBy || ''}</td>
+                                                <td><button type="button" className="btn btn-link p-0 text-reset" aria-label="print" onClick={() => handlePrint(report)}><i className="bi bi-printer-fill cursor-pointer color-blue"></i></button></td>
                                                 <td><button type="button" className="btn btn-link p-0 text-reset" disabled={report.status === 'Exit'} key={report.transactionId} onClick={() => handleCheckout(report)} aria-label="Checkout"><i className={`bi bi-cart4 cursor-pointer ${report.status === 'Exit' ? 'color-gray' : 'color-blue'}`}></i></button></td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
+                            {!isCheckout && 
+                            <div className='d-inline justify-content-end'>
+                                <p className='p-0 m-0'>Total: <span className='fw-bold'>{formatPrice(total)}</span></p>
+                                <p>Total Parked: <span className='fw-bold'>{report.length}</span></p>
+                            </div> }
                             <div class="d-flex justify-content-end p-2">
                                 {totalPages > 1 && (
                                     <Pagination className="mb-0">

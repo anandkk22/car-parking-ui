@@ -34,7 +34,7 @@ export const Dashboard = () => {
     const addSlot = () => setNewSlot(true);
     const addAllocateSlab = () => setAllocateNewSlab(true);
     const onCheckoutSlot = () => setcheckoutSlot(true);
-     const totalAvailableWidth = floorSlots.length > 0 ? (totalAvailableSlot / floorSlots.length) * 100 : 0;
+    const totalAvailableWidth = floorSlots.length > 0 ? (totalAvailableSlot / floorSlots.length) * 100 : 0;
     const totalOccupiedWidth = floorSlots.length > 0 ? (totalOccupiedSlot / floorSlots.length) * 100 : 0;
 
     const refreshParkingSlots = useCallback(async () => {
@@ -57,7 +57,7 @@ export const Dashboard = () => {
     }
 
     const showOnlyCheckoutSlots = () => {
-        // const filteredSlots = floorSlots.filter((slot) => slot.status === 'Ready to Exit' || slot.status === 'occupied');
+        // const filteredSlots = floorSlots.filter((slot) => slot.status === 'occupied');
         // setselectedFloor(filteredSlots);
         setIsCheckout(true);
         setcheckoutSlot(true);
@@ -107,7 +107,7 @@ export const Dashboard = () => {
 
     return (
         <main className="my-10">
-            <section className="my-5">
+            <section className="my-4">
                 <div className="my-10 flex justify-between">
                     <div className="container mt-3 ps-0">
                         <div className="row">

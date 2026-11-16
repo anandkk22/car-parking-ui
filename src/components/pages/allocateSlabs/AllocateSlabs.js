@@ -4,6 +4,9 @@ import { allocateNewSlot } from '../../../services/authServices'
 import { toast } from 'react-toastify';
 import './AllocateSlabs.css'
 import { useCheckInOut } from '../../../context/CheckinContext';
+import { handleCheckInPrint } from '../../../services/service';
+import { formatDate } from '../../../services/authServices';
+import { getUser } from "../../../services/authServices";
 
 export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAllocated }) => {
     const { checkInSlot } = useCheckInOut();
@@ -15,27 +18,23 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
     const [print, setPrint] = useState(false);
     const [responseData, setResponseData] = useState({});
     const [pricingType, setPricingType] = useState(typeOfParking[0].value);
-
+    
     const [regState, setRegState] = useState('');
     const [regCityNumber, setRegCityNumber] = useState('');
     const [regAlpha, setRegAlpha] = useState('');
     const [regFourDigit, setRegFourDigit] = useState('');
-
+    
     const [bhYear, setBhYear] = useState('');
     const [bhName, setBhName] = useState('BH');
     const [bhFourDigit, setBhFourDigit] = useState();
     const [bhAlha, setBhAlha] = useState();
-
+    
+    const [otherDetails, setOtherDetails] = useState(false);
     const [customerName, setCustomerName] = useState();
     const [mobileNumber, setMobileNumber] = useState();
     const [address, setAddress] = useState();
     const date = currentDate.toLocaleDateString();
-    const formatEntryTime = (entryTime) => {
-        const entryDate = new Date(entryTime);
-        if (Number.isNaN(entryDate.getTime())) return entryTime;
-        const pad = (value) => String(value).padStart(2, '0');
-        return `${pad(entryDate.getDate())}/${pad(entryDate.getMonth() + 1)}/${entryDate.getFullYear()} ${pad(entryDate.getHours())}:${pad(entryDate.getMinutes())}`;
-    };
+    const [userDetails, setUserDetails] = useState('');
 
     const handleClose = () => {
         setAllocateNewSlab(false);
@@ -48,6 +47,7 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
         setBhYear('');
         setBhFourDigit('');
         setBhAlha('')
+        setOtherDetails(false);
     }
     const onVehicleTypeChange = (event) => {
         setSelectedVehicleType(event.target.value);
@@ -62,6 +62,18 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
             setRegFourDigit('');
         }
     }
+
+    useEffect(() => {
+        async function fetchUserDetails() {
+            try {
+                const data = await getUser();
+                setUserDetails(data || '');
+            } catch (error) {
+                console.error('Failed to fetch user details:', error);
+                setUserDetails('');
+            }
+        } fetchUserDetails();
+    }, [])
 
     useEffect(() => {
         if (selectedVehicleType === 'regular') {
@@ -115,15 +127,20 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
             setBhAlha(inputValue);
         }
     }
+    const handleOtherDetails = (e) => {
+        setOtherDetails(!otherDetails);
+    }
+    
     async function allocateSlot(event) {
         event.preventDefault();
         try {
             const allocateSlotDetails = {
                 vehicleNumber: selectedVehicleType === 'regular' ? `${regState}-${regCityNumber} ${regAlpha}-${regFourDigit}` : `${bhYear}-${bhName} ${bhFourDigit}-${bhAlha}`,
                 pricingType: pricingType,
-                customerName: customerName,
-                mobileNumber: mobileNumber,
-                address: address
+                customerName: customerName || '',
+                mobileNumber: mobileNumber || '',
+                address: address || '',
+                lastModifiedBy: userDetails.fullName || '',
             }
             const data = await allocateNewSlot(allocateSlotDetails);
             if (data) {
@@ -150,22 +167,13 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
     }
 
     const handlePrint = () => {
-    const printContents = printRef.current.innerHTML;
-    const printWindow = window.open('', '', 'height=600,width=800');
-    printWindow.document.write('<html><head><title>Print</title>');
-    printWindow.document.write('</head><body>');
-    printWindow.document.write(printContents);
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-
-    printAndClose();
-  };
+        const printContents = printRef.current.innerHTML;
+        handleCheckInPrint(printContents);
+        printAndClose();
+    };
     return (
         <div>
-            <Modal show={allocateNewSlab} onHide={handleClose} centered>
+            <Modal show={allocateNewSlab} keyboard={false} backdrop="static" onHide={handleClose} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Allocate Slot</Modal.Title>
                 </Modal.Header>
@@ -218,21 +226,31 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
                                 </div>
                             </div>
                         )}
-                        <div className="form-group mt-4">
-                            <label htmlFor="customerName">Customer Name</label>
-                            <input type="text" className="form-control" id="customerName" aria-describedby="customerName" placeholder="Enter Customer Name" value={customerName}
-                                onChange={(e) => setCustomerName(e.target.value)} />
+                        <div className="form-check mt-4">
+                            <input type="checkbox" className="form-check-input" checked={otherDetails} onChange={handleOtherDetails}
+                                />
+                            <label className='form-check-label' htmlFor="customerName">Other Details</label>
                         </div>
-                        <div className="form-group mt-4">
-                            <label htmlFor="mobileNumber">Mobile Number</label>
-                            <input type="number" className="form-control" id="mobileNumber" aria-describedby="customerName" placeholder="Enter Customer Mobile Number" value={mobileNumber}
-                                onChange={(e) => setMobileNumber(e.target.value)} />
-                        </div>
-                        <div className="form-group mt-4">
-                            <label htmlFor="address">Customer Address</label>
-                            <input type="text" className="form-control" id="address" aria-describedby="address" placeholder="Enter Customer Address" value={address}
-                                onChange={(e) => setAddress(e.target.value)} />
-                        </div>
+                        {
+                            otherDetails &&
+                            <>
+                                <div className="form-group mt-4">
+                                    <label htmlFor="customerName">Customer Name</label>
+                                    <input type="text" className="form-control" id="customerName" aria-describedby="customerName" placeholder="Enter Customer Name" value={customerName}
+                                        onChange={(e) => setCustomerName(e.target.value)} />
+                                </div>
+                                <div className="form-group mt-4">
+                                    <label htmlFor="mobileNumber">Mobile Number</label>
+                                    <input type="number" className="form-control" id="mobileNumber" aria-describedby="customerName" placeholder="Enter Customer Mobile Number" value={mobileNumber}
+                                        onChange={(e) => setMobileNumber(e.target.value)} />
+                                </div>
+                                <div className="form-group mt-4">
+                                    <label htmlFor="address">Customer Address</label>
+                                    <input type="text" className="form-control" id="address" aria-describedby="address" placeholder="Enter Customer Address" value={address}
+                                        onChange={(e) => setAddress(e.target.value)} />
+                                </div>
+                            </>
+                        }
                     </Modal.Body>
                     <Modal.Footer>
                         <Button type='button' variant="secondary" onClick={handleClose}>
@@ -245,7 +263,7 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
                 </form>
             </Modal>
 
-            <Modal show={print} onHide={printAndClose} centered>
+            <Modal show={print} keyboard={false} backdrop="static" onHide={printAndClose} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Shree Car Parking</Modal.Title>
                 </Modal.Header>                
@@ -261,7 +279,7 @@ export const AllocateSlabs = ({ allocateNewSlab, setAllocateNewSlab, onSlotAlloc
                             </div>
                             <div className='container d-flex mb-2'>
                                 <div className='col-sm-6'>Car Number: <span className='fw-bold'>{responseData?.vehicleNumber}</span></div>
-                                <div className='col-sm-6'>Entry: <span className='fw-bold'>{formatEntryTime(responseData?.entryTime)}</span></div>
+                                <div className='col-sm-6'>Entry: <span className='fw-bold'>{formatDate(responseData?.entryTime)}</span></div>
                             </div>
                         </div>
                         <div className='row mt-2'><div className='container'><p className='fontsize-10'>Note: "Car Parked at Owner's Risk"<br /> Time: 9.00am to 9.00pm</p></div></div>

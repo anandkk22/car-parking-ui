@@ -7,12 +7,53 @@ export async function getAllFloors() {
     return data;
 }
 
-export function PriceDisplay(amount) {
-  const formattedPrice = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0 // Optional: removes paise decimal points
-  }).format(amount);
+export function formatPrice(amount) {
+   return amount > 0
+    ? new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0
+      }).format(amount)
+    : '';
+}
 
-  return <p> {amount > 0 ? formattedPrice : ' '}</p>; // Outputs: ₹1,50,000
+export function handleCheckInPrint(printRef) {
+        const printWindow = window.open('', '', 'height=600,width=800');
+        if (!printWindow) {
+            throw new Error('The print window was blocked. Please allow pop-ups and try again.');
+        }
+        printWindow.document.write(`
+        <html>
+        <head>
+            <title>Print</title>
+            <style>
+                @page {
+                    size: 80mm auto; /* Thermal printer */
+                    margin: 5mm;
+                }
+
+                body {
+                    width: 80mm;
+                    margin: 0;
+                    padding: 0;
+                    font-family: Arial, sans-serif;
+                }
+
+                @media print {
+                    body {
+                        width: 80mm;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            ${printRef}
+        </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
 }

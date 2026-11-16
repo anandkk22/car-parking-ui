@@ -34,7 +34,7 @@ export const AddFloor = ({ newFloor, setNewFloor }) => {
     }
     return (
         <div>
-            <Modal show={newFloor} onHide={handleClose} centered>
+            <Modal show={newFloor} onHide={handleClose} keyboard={false} backdrop="static" centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Add Floor</Modal.Title>
                 </Modal.Header>

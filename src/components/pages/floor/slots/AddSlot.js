@@ -47,7 +47,7 @@ export const AddSlot = ({ floors, newSlot, setNewSlot, setFloorSlots }) => {
     }
     return (
         <div>
-            <Modal show={newSlot} onHide={handleClose} centered>
+            <Modal show={newSlot} keyboard={false} backdrop="static" onHide={handleClose} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Add Slot</Modal.Title>
                 </Modal.Header>

@@ -8,7 +8,7 @@ export async function getUser() {
     const browserData = getSession();
     const requestOption = {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${browserData.token}` }
+        headers: { "Content-Type": 'application/json', Authorization: `Bearer ${browserData.token}` }
     }
 
     const response = await fetch('http://localhost:8080/users/me', requestOption)
@@ -22,15 +22,32 @@ export async function getUser() {
 export async function login(authDetails) {
     const requestOption = {
         method: 'POST',
-        headers: { "content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(authDetails)
     }
 
     const response = await fetch('http://localhost:8080/auth/login', requestOption);
-    if (!response.ok) {
-        throw Object.assign(new Error(response.statusText), { status: response.status });
+    const responseText = await response.text();
+    let data;
+
+    if (responseText) {
+        try {
+            data = JSON.parse(responseText);
+        } catch (error) {
+            if (response.ok) {
+                throw new Error("Login returned an invalid response");
+            }
+        }
     }
-    const data = await response.json();
+
+    if (!response.ok) {
+        const message = data?.detail || data?.message || data?.error || responseText || response.statusText;
+        throw Object.assign(new Error(message), { status: response.status });
+    }
+
+    if (!data || typeof data !== 'object') {
+        throw new Error("Login response did not contain valid JSON");
+    }
 
     if (data.token) {
         sessionStorage.setItem("token", JSON.stringify(data.token));
@@ -208,4 +225,3 @@ export async function payment(id, mode) {
 export function logout() {
     sessionStorage.removeItem("token");
 }
-

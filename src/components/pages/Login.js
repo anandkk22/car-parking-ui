@@ -15,7 +15,7 @@ export const Login = ({ setIsAuthenticated }) => {
         event.preventDefault();
         try {
             const authDetails = {
-                email: email.current.value,
+                email: email.current.value.trim(),
                 password: password.current.value,
             }
             const data = await login(authDetails);
@@ -42,11 +42,11 @@ export const Login = ({ setIsAuthenticated }) => {
                         <form onSubmit={handleLogin}>
                             <div className="mb-3">
                                 <label htmlFor="email" className="form-label">Email address</label>
-                                <input ref={email} type="email" className="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" />
+                                <input ref={email} type="email" className="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" required />
                             </div>
                             <div className="mb-3">
                                 <label htmlFor="password" className="form-label">Password</label>
-                                <input ref={password} type="password" className="form-control" id="exampleInputPassword1" />
+                                <input ref={password} type="password" className="form-control" id="exampleInputPassword1" required />
                             </div>
                             <button type="submit" className="btn btn-primary">Submit</button>
                         </form>
