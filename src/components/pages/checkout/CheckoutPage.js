@@ -14,7 +14,7 @@ export const CheckoutPage = ({ areYouSure, handleClose, selectedVehicle, handleC
                             <p class="card-text mb-1">Receipt : <b>{selectedVehicle.transactionId}</b></p>
                             <p class="card-text mb-1">Pricing Type : <b>{selectedVehicle.pricingType}</b></p>
                             <p class="card-text mb-1">Car Number: <b>{selectedVehicle.vehicleNumber}</b></p>
-                            <p class="card-text mb-1">Entry: <b>{formatDate(selectedVehicle.entryTime, false)}</b></p>
+                            <p class="card-text mb-1">Entry: <b>{formatDate(selectedVehicle.entryTime, 'ddMMMyyyy')}</b></p>
                         </div>
                     </div>
                 </Modal.Body>
@@ -50,9 +50,9 @@ export const CheckoutPage = ({ areYouSure, handleClose, selectedVehicle, handleC
                                 </tr>
                                 <tr class="thead-light">
                                     <td className='p-1'>CheckIn:</td>
-                                    <td className='p-1'><b>{formatDate(selectedVehicle.entryTime, false)}</b></td>
+                                    <td className='p-1'><b>{formatDate(selectedVehicle.entryTime, 'ddMMMyyyy')}</b></td>
                                     <td className='p-1'>CheckOut:</td>
-                                    <td className='p-1'><b>{formatDate(selectedVehicle.exitTime, false)}</b></td>
+                                    <td className='p-1'><b>{formatDate(selectedVehicle.exitTime, 'ddMMMyyyy')}</b></td>
                                 </tr>
                                 <tr class="thead-light">
                                     <td className='p-1'>Total Hours:</td>

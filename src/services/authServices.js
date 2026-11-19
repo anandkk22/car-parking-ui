@@ -113,6 +113,20 @@ export async function getAllParkedDetails() {
     return data;
 }
 
+export async function getFloorDetails(floorId) {
+    const browserData = getSession();
+    const requestOption = {
+        method: 'GET',
+        headers: { "content-Type": "application/json", Authorization: `Bearer ${browserData.token}` }
+    }
+    const response = await fetch(`http://localhost:8080/api/v1/parkingslot/${floorId}`, requestOption);
+    if (!response.ok) {
+        throw Object.assign(new Error(response.statusText), { status: response.status });
+    }
+    const data = await response.json();
+    return data;
+}
+
 export async function addFloor(floorDetails) {
     const browserData = getSession();
     const requestOption = {
@@ -184,10 +198,14 @@ export function formatDate(dateValue, format) {
 
     const pad = (value) => String(value).padStart(2, '0');
 
-    if (format) {
-        return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`
-    } else {
+    if (format === 'ddMMM') {
+        const month = date.toLocaleString('en-US', { month: 'short' });
+        return `${pad(date.getDate())}-${month}`;
+    }
+    else if (format = 'ddMMMyyyy') {
         return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+    } else {
+        return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`
     }
 }
 

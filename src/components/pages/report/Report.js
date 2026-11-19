@@ -268,11 +268,11 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
         <div>
             <Modal show={checkoutSlot} onHide={handleClose} keyboard={false} backdrop="static" modal-dialog centered size="xl" className='ps-3'>
                 <Modal.Header closeButton>
-                    <Modal.Title className='fs-5'>Report generated from {formatDate(fromDate, true)} to {formatDate(toDate, true)}</Modal.Title>
+                    <Modal.Title className='fs-5'>Report generated from {formatDate(fromDate, 'ddMMM')} to {formatDate(toDate, 'ddMMM')}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <div className='gap-2 d-flex ps-2 pe-4'>
-                        <div className='container p-1 pe-2 pb-0'>
+                    <div className='gap-2 d-flex ps-2 pe-1'>
+                        <div className='container pe-2'>
                             <div className='row'>
                                 {
                                     !isCheckout && <div className='col-sm-8 ps-1 gap-2 d-flex align-items-center'>
@@ -337,7 +337,7 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
                     {
                         reportRows.length > 0 && <div className="container">
                             <div class="table-responsive">
-                                <table class="table">
+                                <table class="table table-striped table-bordered p-2">
                                     <thead class="table-active">
                                         <tr>
                                             <th scope="col">Id</th>
@@ -361,20 +361,20 @@ export const Report = ({ setcheckoutSlot, checkoutSlot, onCheckoutCompleted, set
                                         {paginatedRows.map((report) => (
                                             <tr key={report.transactionId}>
                                                 <td>{report.transactionId}</td>
-                                                <td>{formatDate(report.date, true)}</td>
+                                                <td>{formatDate(report.date, 'ddMMM')}</td>
                                                 <td>{report.vehicleNumber}</td>
                                                 <td>{report.pricingType}</td>
                                                 <td className='text-center'>{report.floorId}</td>
                                                 <td className='text-center'>{report.slotNumber}</td>
-                                                <td>{formatDate(report.entryTime, false)}</td>
-                                                <td>{report.exitTime && report.status === 'Exit' ? formatDate(report.exitTime, false) : ' '}</td>
+                                                <td>{formatDate(report.entryTime, 'ddMMMyyyy')}</td>
+                                                <td>{report.exitTime && report.status === 'Exit' ? formatDate(report.exitTime, 'ddMMMyyyy') : ' '}</td>
                                                 <td>{report.status === 'Exit' ? report.totalHrs || ' ' : ''}</td>
                                                 <td className='text-end'>{report.status === 'Exit' ? formatPrice(report.amount) || ' ' : ''}</td>
                                                 <td>{report.modeOfPayment || ' '}</td>
                                                 <td>{report.status}</td>
                                                 <td>{report.lastModifiedBy || ''}</td>
                                                 <td><button type="button" className="btn btn-link p-0 text-reset" aria-label="print" onClick={() => handlePrint(report)}><i className="bi bi-printer-fill cursor-pointer color-blue"></i></button></td>
-                                                <td><button type="button" className="btn btn-link p-0 text-reset" disabled={report.status === 'Exit'} key={report.transactionId} onClick={() => handleCheckout(report)} aria-label="Checkout"><i className={`bi bi-cart4 cursor-pointer ${report.status === 'Exit' ? 'color-gray' : 'color-blue'}`}></i></button></td>
+                                                <td><button type="button" className="btn btn-link p-0 text-reset" disabled={report.status === 'Exit'} key={report.transactionId} onClick={() => handleCheckout(report)} aria-label="Checkout"><i className={`bi bi-taxi-front cursor-pointer ${report.status === 'Exit' ? 'color-gray' : 'color-blue'}`}></i></button></td>
                                             </tr>
                                         ))}
                                     </tbody>

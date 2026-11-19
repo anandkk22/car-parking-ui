@@ -7,6 +7,10 @@
   pointer-events: none;
 }
 
+ul, ol, li {
+  list-style: none;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
@@ -41,6 +45,13 @@ label {
   content: " *";
   color: #dc3545; /* Bootstrap's standard $red / danger color */
   font-weight: bold;
+}
+
+.form-check-input:checked ,.form-check-input:focus, .form-check-input:active, .form-select:focus,
+.form-select:active, .form-control:focus, .form-control:active {
+  outline: none !important;
+  box-shadow: 0 0 0 0 rgba(0,123,255,0) !important;
+      -webkit-box-shadow: none !important;
 }
 
 @keyframes App-logo-spin {

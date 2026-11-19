@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { getAllFloors, getParkingSlots } from '../../services/authServices'
+import { getAllFloors, getParkingSlots, getFloorDetails } from '../../services/authServices'
 import { FloorTabs } from './floor/FloorTabs';
 import { toast } from "react-toastify";
 import './Dashboard.css'
 import { AddFloor } from "./floor/AddFloor";
+import { ViewFloor } from "./floor/ViewFloor";
 import { AddSlot } from "./floor/slots/AddSlot";
 import { AllocateSlabs } from "./allocateSlabs/AllocateSlabs";
 // import ChatApp from "./floor/ChatApp";
@@ -25,6 +26,8 @@ export const Dashboard = () => {
     const [newFloor, setNewFloor] = useState(false);
     const [newSlot, setNewSlot] = useState(false);
     const [allocateNewSlab, setAllocateNewSlab] = useState(false);
+    const [viewFloorDetails, setViewFloorDetails] = useState(false);
+    const [floorDetails, setFloorDetails] = useState([]);
     const [checkoutSlot, setcheckoutSlot] = useState(false);
     const [searchVehicle, setSearchSearchVehicle] = useState('');
     const [isCheckout, setIsCheckout] = useState(false);
@@ -63,6 +66,10 @@ export const Dashboard = () => {
         setcheckoutSlot(true);
     }
 
+    const onViewFloorDetails = () => {
+        setViewFloorDetails(true);
+    }
+
 
     useEffect(() => {
         async function fetchFloorDetails() {
@@ -94,6 +101,37 @@ export const Dashboard = () => {
         }
         fetchParkingSlots()
     }, [refreshParkingSlots])
+
+    useEffect(() => {
+        if (!floors) {
+            return;
+        }
+        const viewFloors = floors.map((item) => Number(item.description));
+        async function getFloorDetail() {
+            const getFloors = [];
+            for (const floor of viewFloors) {
+                try {
+                    const floorDetails = await getFloorDetails(floor);
+                    getFloors.push(floorDetails);
+                } catch (error) {
+                    toast.error(error.message);
+                }
+            }
+            const floorFlat = getFloors.flat();
+            const floorIds = floors.map(floor => floor.floorId)
+            const detailsFloor = [];
+            for (const id of floorIds) {
+                detailsFloor.push({
+                    'Total Slots': floorFlat.filter(ele => ele.floorId == id).length,
+                    'Available': floorFlat.filter(ele => ele.floorId == id && ele.status === 'available').length,
+                    'Occupied': floorFlat.filter(ele => ele.floorId == id && ele.status === 'occupied').length,
+                    'Reserved': floorFlat.filter(ele => ele.floorId == id && ele.status === 'reserved').length,
+                })
+            }         
+
+            setFloorDetails(detailsFloor)
+        } getFloorDetail()
+    }, [floors, parkedRefreshVersion])
 
     useEffect(() => {
         if (activeFloor === null) {
@@ -143,9 +181,14 @@ export const Dashboard = () => {
                                                     <div className="fs-4">{floors.length || 0}</div>
                                                     <i className="bi bi-grid-3x3-gap fs-2 text-warning"></i>
                                                 </div>
-                                                <button className="small btn btn-link ps-0 fs-13" onClick={addFloor}>
-                                                    <i className="bi bi-plus-square me-2 text-primary"></i><span className="text-primary">Add Floor</span>
-                                                </button>
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <button className="small btn btn-link ps-0 fs-13" onClick={addFloor}>
+                                                        <i className="bi bi-plus-square me-2 text-primary"></i><span className="text-primary">Add Floor</span>
+                                                    </button>
+                                                    <button className="small btn btn-link pe-0 fs-13" onClick={onViewFloorDetails}>
+                                                        <i className="bi bi-binoculars me-2 text-primary"></i><span className="text-primary">View</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -193,9 +236,9 @@ export const Dashboard = () => {
                                                     <button className="small btn btn-link mt-3 ps-0 fs-13" onClick={showOnlyCheckoutSlots}>
                                                         <i className="bi bi-dash-square me-2 text-primary"></i><span className="text-primary">Checkout</span>
                                                     </button>
-                                                <button className="small btn btn-link mt-3 ps-0 fs-13" onClick={onCheckoutSlot}>
-                                                    <i className="bi bi-calendar-date me-2 text-primary"></i><span className="text-primary">Report</span>
-                                                </button>
+                                                    <button className="small btn btn-link mt-3 ps-0 fs-13" onClick={onCheckoutSlot}>
+                                                        <i className="bi bi-calendar-date me-2 text-primary"></i><span className="text-primary">Report</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -221,6 +264,7 @@ export const Dashboard = () => {
                 setIsCheckout={setIsCheckout}
                 isCheckout={isCheckout}
             />
+            <ViewFloor viewFloorDetails = {viewFloorDetails}  setViewFloorDetails ={setViewFloorDetails} floors={floors} floorDetails={floorDetails}/>
         </main>
     );
 }
